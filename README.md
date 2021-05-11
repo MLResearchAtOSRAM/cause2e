@@ -28,6 +28,10 @@ cause2e provides an **easy to use API** for performing an end to end causal anal
 
 Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge and generating synthetic data for benchmarking.
 
+## Documentation:
+For a detailed documentation of the package, please refer to https://cause2e.readthedocs.io.
+The documentation has been generated from Python docstrings via [Sphinx](https://www.sphinx-doc.org/en/master/).
+
 ## Outlook:
 We are planning to integrate the *causal discovery toolbox* [3] as a second collection of causal discovery algorithms. In the spirit of end to end causal analysis, it would also be desirable to include causal representation learning before the discovery step (e.g. for image data), or causal reinforcement learning after having distilled a valid causal model that delivers interventional distributions.
 
