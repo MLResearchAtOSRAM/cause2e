@@ -34,7 +34,7 @@ setuptools.setup(
         "pandas",
         "pycausal",
         "pydot"
-    ]
+    ],
     dependency_links=[
       "https://github.com/bd2kccd/py-causal/archive/v1.2.1.tar.gz#egg=pycausal"
     ]
