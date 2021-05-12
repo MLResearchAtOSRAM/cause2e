@@ -32,7 +32,7 @@ cause2e provides an **easy to use API** for performing an end-to-end causal anal
 Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge and generating synthetic data for benchmarking.
 
 ## Documentation:
-For a detailed documentation of the package, please refer to this [preliminary page](https://htmlpreview.github.io/?https://github.com/MLResearchAtOSRAM/cause2e/blob/main/docs/_build/html/index.html) until problems with hosting have been sorted out.
+For a detailed documentation of the package, please refer to this mlresearchatosram.github.io/cause2e.
 The documentation has been generated from Python docstrings via [Sphinx](https://www.sphinx-doc.org/en/master/).
 Notebooks with examples will also be released soon, in order to guide you in using the package's functionality for specific application cases.
 
