@@ -5,12 +5,6 @@
 # Required
 version: 2
 
-# Install java for javabridge
-addons:
-  apt:
-    packages:
-      - oracle-java8-set-default
-
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
