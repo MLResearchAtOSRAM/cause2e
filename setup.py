@@ -25,7 +25,7 @@ setuptools.setup(
         "networkx",
         "numpy",
         "pandas",
-        "pycausal @ git+https://github.com/bd2kccd/py-causal",
+        "pycausal @ https://github.com/bd2kccd/py-causal/archive/v1.2.1.tar.gz",
         "pydot"
     ]
 )
