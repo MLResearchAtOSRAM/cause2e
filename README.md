@@ -1,8 +1,8 @@
 The cause2e package provides tools for performing an **end to end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
 - Learn a graphical causal model of the data generating process.
-- Identify a statistical estimand for the causal effect that one variable has one another variable.
+- Identify a statistical estimand for the causal effect that one variable has on another variable.
 - Estimate the effect with various statistical techniques.
-- Check the robustness of your results to changes in the causal model.
+- Check the robustness of your results with respect to changes in the causal model.
 
 The main contribution of cause2e is the integration of two established causal packages that have currently been separated and cumbersome to combine:
 - **Causal discovery methods** from the *py-causal* package [1], which is a Python wrapper around parts of the Java *TETRAD* software. It provides many algorithms for learning the causal graph from data and domain knowledge.
