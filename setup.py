@@ -1,14 +1,8 @@
 import setuptools
-import pkg_resources
+
 
 with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
-    
-pipVersion = pkg_resources.require("pip")[0].version
-setuptoolsVersion = pkg_resources.require("setuptools")[0].version
-
-print("\n PIP Version", pipVersion, "\n")
-print("\n Setuptools Version", setuptoolsVersion, "\n")
 
 setuptools.setup(
     name="cause2e",
@@ -32,10 +26,7 @@ setuptools.setup(
         "networkx",
         "numpy",
         "pandas",
-        "pycausal",
+        "pycausal @git+git//github.com/bd2kccd/py-causal/archive/v1.2.1.tar.gz",
         "pydot"
-    ],
-    dependency_links=[
-      "https://github.com/bd2kccd/py-causal/archive/v1.2.1.tar.gz#egg=pycausal"
     ]
 )
