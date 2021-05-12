@@ -1,6 +1,0 @@
-dowhy
-ipython
-networkx
-numpy
-pandas
-pydot
