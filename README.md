@@ -1,4 +1,4 @@
-The cause2e package provides tools for performing an **end to end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
+The cause2e package provides tools for performing an **end-to-end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
 - Learn a graphical causal model of the data generating process.
 - Identify a statistical estimand for the causal effect that one variable has on another variable.
 - Estimate the effect with various statistical techniques.
@@ -12,7 +12,7 @@ The main contribution of cause2e is the integration of two established causal pa
     - Using statistical estimators to actually estimate the causal effect.
     - Performing robustness tests to check how sensitive the estimate is to model misspecification and other errors.
 
-cause2e provides an **easy to use API** for performing an end to end causal analysis without having to worry about fitting together different libraries and data structures for causal discovery and causal reasoning:
+cause2e provides an **easy to use API** for performing an end-to-end causal analysis without having to worry about fitting together different libraries and data structures for causal discovery and causal reasoning:
 - The **StructureLearner** class for causal discovery can
     - read and preprocess data
     - accept domain knowledge in a simple data format
@@ -33,7 +33,7 @@ For a detailed documentation of the package, please refer to https://cause2e.rea
 The documentation has been generated from Python docstrings via [Sphinx](https://www.sphinx-doc.org/en/master/).
 
 ## Outlook:
-We are planning to integrate the *causal discovery toolbox* [3] as a second collection of causal discovery algorithms. In the spirit of end to end causal analysis, it would also be desirable to include causal representation learning before the discovery step (e.g. for image data), or causal reinforcement learning after having distilled a valid causal model that delivers interventional distributions.
+We are planning to integrate the *causal discovery toolbox* [3] as a second collection of causal discovery algorithms. In the spirit of end-to-end causal analysis, it would also be desirable to include causal representation learning before the discovery step (e.g. for image data), or causal reinforcement learning after having distilled a valid causal model that delivers interventional distributions.
 
 ## Installation:
 First, install *py-causal* by following these instructions: https://github.com/bd2kccd/py-causal
@@ -53,7 +53,7 @@ cause2e is not meant to replace either *py-causal* or *DoWhy*, our goal is to ma
 ## Citation:
 If you are using cause2e in your work, please cite:
 
-Daniel Grünbaum (2021). cause2e: A Python package for end to end causal analysis. https://github.com/MLResearchAtOSRAM/cause2e
+Daniel Grünbaum (2021). cause2e: A Python package for end-to-end causal analysis. https://github.com/MLResearchAtOSRAM/cause2e
 
 ## References:
 
