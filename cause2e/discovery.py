@@ -290,7 +290,7 @@ class StructureLearner():
             directed: Optional; A boolean indicating if the edge should be a directed one. If not,
                 the roles of source and destination can be exchanged. Defaults to True.
         """
-        self.graph.has_edge(source, destination, directed)
+        return self.graph.has_edge(source, destination, directed)
 
     def has_node(self, name):
         """Checks if the causal graph contains a specific node.
@@ -298,7 +298,7 @@ class StructureLearner():
         Args:
             name: A string indicating the name of the node in question.
         """
-        self.graph.has_node(name)
+        return self.graph.has_node(name)
 
     def is_acyclic(self):
         """Checks if the causal graph is acyclic.

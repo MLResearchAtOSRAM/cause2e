@@ -168,6 +168,6 @@ class Preprocessor():
         Args:
             kwargs: A dictionary containing all information about the transformation.
         """
-        old_name = kwargs['old_name']
+        current_name = kwargs['current_name']
         new_name = kwargs['new_name']
-        self.rename_variable(old_name, new_name, store=False)
+        self.rename_variable(current_name, new_name, store=False)
