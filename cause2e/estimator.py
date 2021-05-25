@@ -20,6 +20,8 @@ For more information about steps 2-5, please refer to https://microsoft.github.i
 
 import dowhy
 from cause2e import preproc, reader
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
 
 class Estimator():
@@ -76,14 +78,6 @@ class Estimator():
     def _dot_name(self):
         return self.paths.dot_name
 
-    def check_graph(self):  # TODO or are checks before saving sufficient?
-        graph = self.load_graph()  # what type? reactivate dotgraph?
-        assert graph.is_acyclic()  # checks both fully directed and acyclic
-        column_names = self.data.columns
-        node_names = graph.nodes
-        node_msg = 'Variables in graph do not match variables in data!'
-        assert column_names == node_names, node_msg
-
     def initialize_model(self, treatment, outcome, **kwargs):
         """Initializes the causal model.
 
@@ -93,13 +87,15 @@ class Estimator():
             **kwargs: Advanced parameters for the analysis. Please refer to
                 https://microsoft.github.io/dowhy/ for more information.
         """
-        # self.check_graph()
+        # self._check_graph()
         self.model = dowhy.CausalModel(data=self.data,
                                        treatment=treatment,
                                        outcome=outcome,
                                        graph=self._dot_name,
                                        **kwargs
                                        )
+        self.treatment = treatment
+        self.outcome = outcome
 
     def identify_estimand(self, verbose=True, **kwargs):
         """Algebraically identifies a statistical estimand for the causal effect from the graph.
@@ -148,3 +144,70 @@ class Estimator():
                                                           )
         if verbose:
             print(self.robustness_info)
+
+    def compare_to_noncausal_regression(self, input_cols, drop_cols=False):
+        """Prints a comparison of the causal estimate to a noncausal linear regression estimate.
+
+        Args:
+            input_cols: A set of columns to be used in the linear regression.
+            drop_cols: Optional; A boolean indicating if input_cols should indicate which columns
+                to drop instead of which columns to use. Defaults to False.
+        """
+        X, y, col_names = self._get_regression_input(input_cols, drop_cols)
+        reg = LinearRegression(normalize=True).fit(X, y)
+        self._print_regression_results(X, y, col_names, reg)
+
+    def _get_regression_input(self, input_cols, drop_cols):
+        """Gets the data in the right format for the linear regression.
+
+        Args:
+            input_cols: A set of columns to be used in the linear regression.
+            drop_cols: Optional; A boolean indicating if input_cols should indicate which columns
+                to drop instead of which columns to use. Defaults to False.
+
+        Returns:
+            A numpy array containing the input data for the linear regression.
+            A numpy array containing the target data for the linear regression.
+            A list containing the names of the columns that are used in the linear regression.
+        """
+        input_df = self._get_input_df(input_cols, drop_cols)
+        if input_df.shape[1] == 1:
+            X = np.array(input_df).reshape(-1, 1)
+        else:
+            X = np.array(input_df)
+        y = np.array(self.data[self.outcome]).reshape(-1, 1)
+        return X, y, input_df.columns
+
+    def _get_input_df(self, input_cols, drop_cols):
+        """Returns a dataframe containing only specified columns.
+
+        Args:
+            input_cols: A set of columns to be used in the linear regression.
+            drop_cols: Optional; A boolean indicating if input_cols should indicate which columns
+                to drop instead of which columns to use. Defaults to False.
+        """
+        if drop_cols:
+            return self.data.drop(columns=input_cols, axis=1)
+        else:
+            return self.data[input_cols]
+
+    def _print_regression_results(self, X, y, col_names, reg):
+        """Prints the results of comparing the causal estimate to the linear regression estimate.
+
+        Args:
+            X: A numpy array containing the input data for the linear regression.
+            y: A numpy array containing the target data for the linear regression.
+            col_names: A list containing the names of the columns that are used in the linear regression.
+            reg: A fitted linear regression object from sklearn.
+        """
+        coefs = {name: coef[1] for name, coef in zip(col_names, np.ndenumerate(reg.coef_))}
+        print(f"Regression score: {reg.score(X, y)}")
+        print("--------------------------------")
+        print("Regression coefficients:")
+        for it in coefs.items():
+            print(it)
+        print(f"Intercept: {reg.intercept_}")
+        print("--------------------------------")
+        msg_part = f"estimate for effect of {self.treatment} on {self.outcome}:"
+        print(f"Causal {msg_part} {self.estimated_effect.value}")
+        print(f"Regression {msg_part} {coefs[self.treatment]}")
