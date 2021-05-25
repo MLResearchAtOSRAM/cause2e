@@ -11,7 +11,7 @@ constraints.
 import itertools
 
 
-class ForbiddenEdgeCreator():
+class ForbiddenEdgeCreator:
     """Main class for creating forbidden edges from a temporal order of the variables.
 
     Attributes:
@@ -19,19 +19,19 @@ class ForbiddenEdgeCreator():
             variables were generated. This is used to infer forbidden edges since the future
             cannot cause the past.
     """
-    def __init__(self, temporal_order):
+    def __init__(self, temporal_order=None):
         """Inits ForbiddenEdgeCreator."""
         self.temporal_order = temporal_order
+        self.forbidden_edges = set()
 
-    def forbidden_edges_from_temporal(self):
-        """Returns all pairs of variables such that the first variable cannot causally affect the second
+    def forbid_edges_from_temporal(self):
+        """Finds all pairs of variables such that the first variable cannot causally affect the second
         variable for temporal reasons.
         """
-        set_pairs = self._forbidden_set_pairs_from_temporal()
-        edges = _set_product_multiple(set_pairs)
-        return edges
+        set_pairs = self._forbid_set_pairs_from_temporal()
+        self.forbidden_edges |= _set_product_multiple(set_pairs)
 
-    def _forbidden_set_pairs_from_temporal(self):
+    def _forbid_set_pairs_from_temporal(self):
         """
         Returns all pairs of sets such that variables in
         the first set cannot causally affect variables in the
@@ -42,6 +42,42 @@ class ForbiddenEdgeCreator():
             for j in range(i):
                 set_pairs.add((frozenset(later), frozenset(self.temporal_order[j])))
         return set_pairs
+
+    def forbid_edges_within_group(self, group):
+        """Forbids edges within one group of variables.
+
+        Args:
+            group: A set containing variables that cannot affect each other.
+        """
+        self.forbidden_edges |= _set_product(group, group)
+
+    def forbid_edges_from_groups(self,
+                                 group,
+                                 no_inf_on_group=set(),
+                                 not_infd_by_group=set(),
+                                 exceptions=set()
+                                 ):
+        """Forbids edges between groups of variables.
+
+        Args:
+            group: A set containing variables.
+            no_inf_on_group: Optional; a set containing all variables that cannot affect variables
+                in 'group'. Defaults to None.
+            not_infd_by_group: Optional; a set containing all variables that cannot be affected by
+                variables in 'group'. Defaults to None.
+            exceptions: Optional; a set of edges that should not be forbidden even if the group
+                structure entails it. Defaults to None.
+        """
+        edges = self._forbid_incoming_edges(group, no_inf_on_group)
+        edges |= self._forbid_outgoing_edges(group, not_infd_by_group)
+        edges -= exceptions
+        self.forbidden_edges |= edges
+
+    def _forbid_incoming_edges(self, group, no_inf_on_group):
+        return _set_product(no_inf_on_group, group)
+
+    def _forbid_outgoing_edges(self, group, not_infd_by_group):
+        return _set_product(group, not_infd_by_group)
 
 
 class KnowledgeChecker:
@@ -74,12 +110,14 @@ class KnowledgeChecker:
         """Returns a boolean indicating if all domain knowledge is respected."""
         self.respects_forbidden()
         self.respects_required()
-        self.respects_temporal()
         print('Knowledge is respected!')
         return True
 
     def respects_forbidden(self):
         """Returns True if no forbidden edges are present, else raises Assertion error."""
+        edge_creator = ForbiddenEdgeCreator(self.temporal)
+        edge_creator.forbid_edges_from_temporal()
+        self.forbidden |= edge_creator.forbidden_edges
         existing_but_forbidden = self.existing & self.forbidden
         msg = f'Forbidden edges: {existing_but_forbidden}'
         assert not existing_but_forbidden, msg
@@ -90,13 +128,6 @@ class KnowledgeChecker:
         absent_but_required = self.required - self.existing
         msg = f'Missing edges: {absent_but_required}'
         assert not absent_but_required, msg
-        return True
-
-    def respects_temporal(self):
-        """Returns True if no temporal knowledge is violated, else raises Assertion error."""
-        creator = ForbiddenEdgeCreator(self.temporal)
-        self.forbidden = creator.forbidden_edges_from_temporal()
-        self.respects_forbidden()
         return True
 
 

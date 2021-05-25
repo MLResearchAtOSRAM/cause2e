@@ -6,10 +6,11 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="cause2e",
-    version="0.1.1",
+    version="0.1.2",
     author="Daniel Gruenbaum",
     author_email="daniel.gruenbaum@osram-os.com",
     description="A package for end to end causal analysis",
+    license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MLResearchAtOSRAM/cause2e",
