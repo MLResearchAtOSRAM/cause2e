@@ -188,7 +188,9 @@ class StructureLearner():
                    max_degree=10,
                    verbose=True,
                    keep_vm=True,
-                   **kwargs):
+                   show_graph=True,
+                   **kwargs
+                   ):
         """Infers the causal graph from the data and domain knowledge.
 
         This is where the causal discovery algorithms are invoked. Currently only algorithms from
@@ -208,17 +210,28 @@ class StructureLearner():
                 causal graph. Defaults to 10.
             verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
             keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
-                after the search.   This is required to use TETRAD objects afterwards. Defaults to
+                after the search. This is required to use TETRAD objects afterwards. Defaults to
+                True.
+            show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
         """
         self.searcher = self._plain_searcher
-        self.searcher.run_search(**kwargs)
+        self.searcher.run_search(algo='fges',
+                                 use_knowledge=True,
+                                 score='cg-bic-score',
+                                 max_degree=10,
+                                 verbose=True,
+                                 keep_vm=True,
+                                 **kwargs
+                                 )
         self.graph = self.searcher.graph_output
         self.graph_databricks = self.graph.to_graph_databricks(self.paths.svg_name)
         # self.scores = self.searcher.scores not available yet
         # better use searchers method to access scores and pretty print etc.
+        if show_graph:
+            self.display_graph()
 
     def display_graph(self):
         """Shows the causal graph."""
