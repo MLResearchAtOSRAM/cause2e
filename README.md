@@ -31,7 +31,7 @@ cause2e provides an **easy to use API** for performing an end-to-end causal anal
 
 Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge and generating synthetic data for benchmarking.
 
-## Getting started
+## Getting started:
 The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/tree/main/examples/end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality will be released soon.
 
 ## Documentation:
