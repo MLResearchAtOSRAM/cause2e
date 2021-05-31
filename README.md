@@ -31,10 +31,12 @@ cause2e provides an **easy to use API** for performing an end-to-end causal anal
 
 Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge and generating synthetic data for benchmarking.
 
+## Getting started
+The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/examples/end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality will be released soon.
+
 ## Documentation:
 For a detailed documentation of the package, please refer to [mlresearchatosram.github.io/cause2e](https://mlresearchatosram.github.io/cause2e).
 The documentation has been generated from Python docstrings via [Sphinx](https://www.sphinx-doc.org/en/master/).
-Notebooks with examples will also be released soon, in order to guide you in using the package's functionality for specific application cases.
 
 ## Outlook:
 We are planning to integrate the *causal discovery toolbox* [3] as a second collection of causal discovery algorithms. In the spirit of end-to-end causal analysis, it would also be desirable to include causal representation learning before the discovery step (e.g. for image data), or causal reinforcement learning after having distilled a valid causal model that delivers interventional distributions.
