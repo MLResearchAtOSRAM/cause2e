@@ -14,7 +14,7 @@ The proposed procedure is as follows:\n
 7) Save the graph in various file formats.\n
 """
 
-from cause2e import reader, preproc, searcher
+from cause2e import reader, preproc, searcher, estimator
 
 
 class StructureLearner():
@@ -113,6 +113,11 @@ class StructureLearner():
         self._ensure_preprocessor()
         self.preprocessor.rename_variable(current_name, new_name)
 
+    def normalize_variables(self):
+        """Replaces data for all variables by their z-scores."""
+        self._ensure_preprocessor()
+        self.preprocessor.normalize_variables()
+
     def _ensure_preprocessor(self):
         """Ensures that a preprocessor is initialized."""
         if not hasattr(self, 'preprocessor'):
@@ -189,6 +194,7 @@ class StructureLearner():
                    verbose=True,
                    keep_vm=True,
                    show_graph=True,
+                   save_graph=True,
                    **kwargs
                    ):
         """Infers the causal graph from the data and domain knowledge.
@@ -214,6 +220,8 @@ class StructureLearner():
                 True.
             show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
+            show_graph: A boolean indicating if the resulting graph should be saved. Defaults to
+                True.
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
         """
@@ -232,6 +240,8 @@ class StructureLearner():
         # better use searchers method to access scores and pretty print etc.
         if show_graph:
             self.display_graph()
+        if save_graph:
+            self.save_graphs()
 
     def display_graph(self):
         """Shows the causal graph."""
@@ -347,11 +357,12 @@ class StructureLearner():
         """
         return self.graph.respects_knowledge(self.knowledge)
 
-    def save_graphs(self, file_extensions, verbose=True, strict=True):
+    def save_graphs(self, file_extensions=['dot', 'png', 'svg'], verbose=True, strict=True):
         """Saves the causal graph in various file formats.
 
         Args:
-            file_extensions: A list of strings indicating the desired file extensions.
+            file_extensions: Optional; A list of strings indicating the desired file extensions.
+                Defaults to ['dot', 'png', 'svg'].
             verbose: Optional; A boolean indicating if confirmation messages should be printed.
                 Defaults to True.
             strict: Optional; A boolean indicating if the graph must be acyclic and in accordance
@@ -392,3 +403,37 @@ class StructureLearner():
         if self.knowledge is None:
             additions += '_no_knowledge'
         return additions
+
+    def run_all_quick_analyses(self,
+                               estimand_types=['nonparametric-ate',
+                                               'nonparametric-nde',
+                                               'nonparametric-nie'
+                                               ],
+                               verbose=False,
+                               show_tables=True,
+                               save_tables=True,
+                               show_heatmaps=True,
+                               generate_pdf_report=True):
+        """Performs all possible quick causal anlyses with preset parameters.
+
+        Args:
+            estimand_types: A list of strings indicating the types of causal effects.
+            verbose: Optional; A boolean indicating if verbose output should be displayed for each
+                analysis. Defaults to False.
+            show_tables: Optional; A boolean indicating if the resulting causal estimates should be
+                displayed in tabular form. Defaults to True.
+            save_tables: Optional; A boolean indicating if the resulting causal estimates should be
+                written to a csv. Defaults to True.
+            show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
+                be displayed and saved in heatmap form. Defaults to True.
+            generate_report: Optional; A boolean indicating if the causal graph, heatmaps and
+                estimates should be written to a pdf.
+        """
+        estim = estimator.Estimator(self.paths)
+        estim.data = self.data
+        estim.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
+                                     show_heatmaps
+                                     )
+        if generate_pdf_report:
+            estim.generate_pdf_report()
+        self._estim = estim
