@@ -40,8 +40,8 @@ class Preprocessor():
         vals = func(self.data, *input_cols)
         self.add_variable(name, vals, store=False)
         if not keep_old:
-            for col in input_cols:
-                self.delete_variable(col)
+            for name in input_cols:
+                self.delete_variable(name)
         if store:
             trafo_type = 'combine_variables'
             kwargs = {'name': name,
@@ -98,6 +98,30 @@ class Preprocessor():
                       }
             self.transformations.append({'fun': trafo_type, 'kwargs': kwargs})
 
+    def normalize_variables(self, store=True):
+        """Replaces all variables by their z-scores.
+
+        Args:
+            store: Optional; A boolean indicating if the transformations should be stored in the
+                transformations attribute of the preprocessor. Defaults to True.
+        """
+        for name in self.data.columns:
+            self.normalize_variable(name, store=store)
+
+    def normalize_variable(self, name, store=True):
+        """Replaces a variable by its z-scores.
+
+        Args:
+            name: A string indicating the name of the target variable.
+            store: Optional; A boolean indicating if the transformation should be stored in the
+                transformations attribute of the preprocessor. Defaults to True.
+        """
+        self.data[name] = (self.data[name] - self.data[name].mean())/self.data[name].std(ddof=0)
+        if store:
+            trafo_type = 'normalize_variable'
+            kwargs = {'name': name}
+            self.transformations.append({'fun': trafo_type, 'kwargs': kwargs})
+
     def apply_stored_transformations(self, transformations, vals_list=None):
         """Imitates a stored sequence of preprocessing steps.
 
@@ -130,6 +154,8 @@ class Preprocessor():
             self.apply_stored_deletion(kwargs)
         elif fun == 'rename_variable':
             self.apply_stored_renaming(kwargs)
+        elif fun == 'normalize_variable':
+            self.apply_stored_normalization(kwargs)
 
     def apply_stored_combination(self, kwargs):
         """Applies a stored combination of data columns.
@@ -171,3 +197,12 @@ class Preprocessor():
         current_name = kwargs['current_name']
         new_name = kwargs['new_name']
         self.rename_variable(current_name, new_name, store=False)
+
+    def apply_stored_normalization(self, kwargs):
+        """Applies a stored normalization of a data column.
+
+        Args:
+            kwargs: A dictionary containing all information about the transformation.
+        """
+        name = kwargs['name']
+        self.normalize_variable(name, store=False)
