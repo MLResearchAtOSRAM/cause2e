@@ -1,5 +1,5 @@
 import unittest
-from cause2e.preproc import Preprocessor
+from cause2e._preproc import Preprocessor
 from pathlib import Path
 import pandas as pd
 import copy
@@ -78,7 +78,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         self.assertTrue('W0' in data)
         kwargs = {'name': 'W0'}
         trafo = {'fun': 'delete_variable', 'kwargs': kwargs}
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         self.assertFalse('W0' in data)
 
     def test_apply_stored_combination(self):
@@ -92,7 +92,7 @@ class TestImitatePreprocessor(unittest.TestCase):
                   'keep_old': False
                   }
         trafo = {'fun': 'combine_variables', 'kwargs': kwargs}
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         data = self.pproc_2.data
         self.assertTrue('W01_Delta' in data)
 
@@ -102,7 +102,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         name = 'DoubleW0'
         kwargs = {'name': name}
         trafo = {'fun': 'add_variable', 'kwargs': kwargs}
-        self.pproc_2.apply_stored_transformation(trafo, vals)
+        self.pproc_2._apply_stored_transformation(trafo, vals)
         self.assertTrue(name in data)
         self.assertTrue(data[name].equals(vals))
         
@@ -114,7 +114,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         trafo = {'fun': 'rename_variable', 'kwargs': kwargs}
         self.assertTrue(current_name in data)
         self.assertFalse(new_name in data)
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         self.assertFalse(current_name in data)
         self.assertTrue(new_name in data)
 
@@ -125,7 +125,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         trafo = self.pproc_1.transformations[0]
         kwargs = {'name': 'W0'}
         self.assertEqual(trafo, {'fun': 'delete_variable', 'kwargs': kwargs})
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         self.assertFalse('W0' in data_2)
         self.assertTrue(data_1.equals(data_2))
 
@@ -144,7 +144,7 @@ class TestImitatePreprocessor(unittest.TestCase):
                   'keep_old': True
                   }
         self.assertEqual(trafo, {'fun': 'combine_variables', 'kwargs': kwargs})
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         self.assertTrue('W01_Delta' in data_2)
         self.assertTrue(data_1.equals(data_2))
 
@@ -157,7 +157,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         trafo = self.pproc_1.transformations[0]
         kwargs = {'name': name}
         self.assertEqual(trafo, {'fun': 'add_variable', 'kwargs': kwargs})
-        self.pproc_2.apply_stored_transformation(trafo, vals)
+        self.pproc_2._apply_stored_transformation(trafo, vals)
         self.assertTrue('DoubleW0' in data_2)
         self.assertTrue(data_1.equals(data_2))
         
@@ -168,7 +168,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         trafo = self.pproc_1.transformations[0]
         kwargs = {'current_name': 'W0', 'new_name': 'W0_new'}
         self.assertEqual(trafo, {'fun': 'rename_variable', 'kwargs': kwargs})
-        self.pproc_2.apply_stored_transformation(trafo)
+        self.pproc_2._apply_stored_transformation(trafo)
         self.assertTrue('W0_new' in data_2)
         self.assertFalse('W0' in data_2)
         self.assertTrue(data_1.equals(data_2))

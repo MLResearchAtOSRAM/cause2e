@@ -1,6 +1,6 @@
 import unittest
-from cause2e.knowledge import (set_product,
-                               set_product_multiple,
+from cause2e.knowledge import (_set_product,
+                               _set_product_multiple,
                                ForbiddenEdgeCreator,
                                KnowledgeChecker
                                )
@@ -18,7 +18,7 @@ class TestKnowledgeGeneration(unittest.TestCase):
         result_manual = {('a', 1), ('a', 2), ('a', 3),
                          ('b', 1), ('b', 2), ('b', 3)
                          }
-        result = set_product({'a', 'b'}, {1, 2, 3})
+        result = _set_product({'a', 'b'}, {1, 2, 3})
         self.assertEqual(result, result_manual)
 
     def test_set_product_multiple(self):
@@ -31,7 +31,7 @@ class TestKnowledgeGeneration(unittest.TestCase):
         set_pairs = {(self.order[0], self.order[1]),
                      (self.order[1], self.order[2])
                      }
-        result = set_product_multiple(set_pairs)
+        result = _set_product_multiple(set_pairs)
         self.assertEqual(result, result_manual)
 
     def test_edge_creator(self):
@@ -40,7 +40,7 @@ class TestKnowledgeGeneration(unittest.TestCase):
                          (self.order[2], self.order[0]),
                          (self.order[2], self.order[1])
                          }
-        result = edge_creator.forbidden_set_pairs_from_temporal()
+        result = edge_creator._forbid_set_pairs_from_temporal()
         self.assertEqual(result, result_manual)
 
 
@@ -78,11 +78,11 @@ class TestKnowledgeChecker(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.checker.respects_required()
 
-    def test_respects_temporal(self):
-        self.checker.respects_temporal()
-        self.checker.temporal.append(frozenset({'A'}))
-        with self.assertRaises(AssertionError):
-            self.checker.respects_temporal()
+    # def test_respects_temporal(self):
+    #     self.checker.respects_temporal()
+    #     self.checker.temporal.append(frozenset({'A'}))
+    #     with self.assertRaises(AssertionError):
+    #         self.checker.respects_temporal()
 
     def test_respects_knowledge(self):
         with self.assertRaises(AssertionError):

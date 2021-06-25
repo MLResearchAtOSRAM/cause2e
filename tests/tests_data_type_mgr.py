@@ -1,5 +1,5 @@
 import unittest
-from cause2e.data_type_mgr import DataTypeManager
+from cause2e._data_type_mgr import DataTypeManager
 from pathlib import Path
 import pandas as pd
 

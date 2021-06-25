@@ -14,7 +14,7 @@ The proposed procedure is as follows:\n
 7) Save the graph in various file formats.\n
 """
 
-from cause2e import reader, preproc, searcher, estimator
+from cause2e import _reader, _preproc, _searcher, estimator
 
 
 class StructureLearner():
@@ -22,16 +22,12 @@ class StructureLearner():
 
     Attributes:
         paths: A cause2e.PathManager managing paths and file names.
-        reader: A cause2e.Reader for reading the data.
         data: A pandas.Dataframe containing the data.
-        transformations: A list storing all the performed preprocessing transformations.
         variables: A set containing the names of all variables in the data.
         continuous: A set containing the names of all continuous variables in the data.
         discrete: A set containing the names of all discrete variables in the data.
         knowledge: A dictionary containing domain knowledge about required or forbidden edges in
             the causal graph. Temporal knowledge can also be used.
-        searcher: A cause2e.searcher used to infer the casusal graph from data and domain knowledge.
-            Currently restriced to methods from the TETRAD program.
         graph: A cause2e.Graph representing the causal graph.
         spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
             None.
@@ -49,26 +45,26 @@ class StructureLearner():
         self.spark = spark
 
     @property
-    def reader(self):
-        return reader.Reader(self.paths.full_data_name,
-                             self.spark
-                             )
+    def _reader(self):
+        return _reader.Reader(self.paths.full_data_name,
+                              self.spark
+                              )
 
     def read_csv(self, **kwargs):
         """Reads data from a csv file."""
-        self.data = self.reader.read_csv(**kwargs)
+        self.data = self._reader.read_csv(**kwargs)
 
     def read_parquet(self, **kwargs):
         """Reads data rom a parquet file."""
-        self.data = self.reader.read_parquet(**kwargs)
+        self.data = self._reader.read_parquet(**kwargs)
 
     @property
     def variables(self):
         return set(self.data.columns)
 
     @property
-    def transformations(self):
-        return self.preprocessor.transformations
+    def _transformations(self):
+        return self._preprocessor.transformations
 
     def combine_variables(self, name, input_cols, func, keep_old=True):
         """Combines data from existing variables into a new variable.
@@ -82,7 +78,7 @@ class StructureLearner():
                 data. Defaults to True.
         """
         self._ensure_preprocessor()
-        self.preprocessor.combine_variables(name, input_cols, func, keep_old)
+        self._preprocessor.combine_variables(name, input_cols, func, keep_old)
 
     def add_variable(self, name, vals):
         """Adds a new variable to the data.
@@ -92,7 +88,7 @@ class StructureLearner():
             vals: A column of values for the new variable.
         """
         self._ensure_preprocessor()
-        self.preprocessor.add_variable(name, vals)
+        self._preprocessor.add_variable(name, vals)
 
     def delete_variable(self, name):
         """Deletes a variable from the data.
@@ -101,7 +97,7 @@ class StructureLearner():
             name: A string indicating the name of the target variable.
         """
         self._ensure_preprocessor()
-        self.preprocessor.delete_variable(name)
+        self._preprocessor.delete_variable(name)
 
     def rename_variable(self, current_name, new_name):
         """Renames a variable in the data.
@@ -111,19 +107,28 @@ class StructureLearner():
             new_name: A string indicating the desired new name of the variable.
         """
         self._ensure_preprocessor()
-        self.preprocessor.rename_variable(current_name, new_name)
+        self._preprocessor.rename_variable(current_name, new_name)
 
     def normalize_variables(self):
         """Replaces data for all variables by their z-scores."""
         self._ensure_preprocessor()
-        self.preprocessor.normalize_variables()
+        self._preprocessor.normalize_variables()
+
+    def normalize_variable(self, name):
+        """Replaces a variable by its z-scores.
+
+        Args:
+            name: A string indicating the name of the target variable.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.normalize_variable(name)
 
     def _ensure_preprocessor(self):
         """Ensures that a preprocessor is initialized."""
         if not hasattr(self, 'preprocessor'):
-            self.preprocessor = preproc.Preprocessor(self.data)
+            self._preprocessor = _preproc.Preprocessor(self.data)
 
-    def set_knowledge(self, forbidden=set(), required=set(), temporal=[]):
+    def set_knowledge(self, forbidden=set(), required=set(), temporal=[], expected_effects={}):
         """Sets the domain knowledge that we have a about the causal graph.
 
         Args:
@@ -136,10 +141,13 @@ class StructureLearner():
             temporal: Optional; A list of variable sets indicating the temporal order in which the
                 variables were generated. This is used to infer forbidden edges since the future
                 cannot cause the past. Defaults to [].
+            expected_effects: Optional; A dictionary containing expected quantitative causal
+                effects. This is evaluated after estimation of the effects. Defaults to {}.
         """
         self.knowledge = {'forbidden': forbidden,
                           'required': required,
-                          'temporal': temporal
+                          'temporal': temporal,
+                          'expected_effects': expected_effects
                           }
 
     def erase_knowledge(self):
@@ -148,11 +156,11 @@ class StructureLearner():
 
     @property
     def _plain_searcher(self):
-        return searcher.TetradSearcher(self.data,
-                                       self.continuous,
-                                       self.discrete,
-                                       self.knowledge
-                                       )
+        return _searcher.TetradSearcher(self.data,
+                                        self.continuous,
+                                        self.discrete,
+                                        self.knowledge
+                                        )
 
     def show_search_algos(self):  # these methods are not efficient
         """Shows all search algorithms that the TETRAD program offers."""
@@ -186,34 +194,51 @@ class StructureLearner():
         """
         self._plain_searcher.show_algo_params(algo_name, test_name, score_name)
 
+    def run_quick_search(self, verbose=True, keep_vm=True, show_graph=True, save_graph=True):
+        """Infers the causal graph from the data and domain knowledge with preset parameters.
+
+        Args:
+            verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
+            keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
+                after the search. This is required to use TETRAD objects afterwards. Defaults to
+                True.
+            show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
+                True.
+            show_graph: A boolean indicating if the resulting graph should be saved. Defaults to
+                True.
+        """
+        self.run_search(algo='fges',
+                        use_knowledge=True,
+                        verbose=verbose,
+                        keep_vm=keep_vm,
+                        show_graph=show_graph,
+                        save_graph=save_graph,
+                        scoreId='cg-bic-score',
+                        faithfulnessAssumed=True,
+                        symmetricFirstStep=True)
+
     def run_search(self,
-                   algo='fges',
+                   algo,
                    use_knowledge=True,
-                   score='cg-bic-score',
-                   max_degree=10,
                    verbose=True,
                    keep_vm=True,
                    show_graph=True,
                    save_graph=True,
-                   **kwargs
-                   ):
+                   **kwargs):
         """Infers the causal graph from the data and domain knowledge.
 
         This is where the causal discovery algorithms are invoked. Currently only algorithms from
         the TETRAD program are available. The algorithms are called via pycausal, which is a Python
         wrapper around the TETRAD program provided by the creators of the original software. It
-        seems that superfluous arguments are ignored, meaning e.g. that the default score does not
+        seems that superfluous arguments are ignored, meaning e.g. that passing a score does not
         cause problems when invoking constraint based algorithms like PC. Note that you do not need
         to specify a threshold for distinguish between discrete and continuous variables, since
         this is taken care of internally by the cause2e.searcher.
 
         Args:
-            algo: Optional; A string indicating the search algorithm. Defaults to 'fges'.
+            algo: A string indicating the search algorithm.
             use_knowledge: Optional; A boolean indicating if we want to use our domain knowledge
                 (some TETRAD algorithms cannot use it). Defaults to True.
-            score: Optional; A string indicating the search score. Defaults to 'cg-bic-score'.
-            max_degree: An integer describing the maximum number of adjacent edges for a node in the
-                causal graph. Defaults to 10.
             verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
             keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
                 after the search. This is required to use TETRAD objects afterwards. Defaults to
@@ -225,18 +250,11 @@ class StructureLearner():
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
         """
-        self.searcher = self._plain_searcher
-        self.searcher.run_search(algo='fges',
-                                 use_knowledge=True,
-                                 score='cg-bic-score',
-                                 max_degree=10,
-                                 verbose=True,
-                                 keep_vm=True,
-                                 **kwargs
-                                 )
-        self.graph = self.searcher.graph_output
+        self._searcher = self._plain_searcher
+        self._searcher.run_search(algo, use_knowledge, verbose, keep_vm, **kwargs)
+        self.graph = self._searcher.graph_output
         self.graph_databricks = self.graph.to_graph_databricks(self.paths.svg_name)
-        # self.scores = self.searcher.scores not available yet
+        # self.scores = self._searcher.scores not available yet
         # better use searchers method to access scores and pretty print etc.
         if show_graph:
             self.display_graph()
@@ -413,6 +431,7 @@ class StructureLearner():
                                show_tables=True,
                                save_tables=True,
                                show_heatmaps=True,
+                               show_validation=True,
                                generate_pdf_report=True):
         """Performs all possible quick causal anlyses with preset parameters.
 
@@ -426,14 +445,15 @@ class StructureLearner():
                 written to a csv. Defaults to True.
             show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
                 be displayed and saved in heatmap form. Defaults to True.
+            show_validation: Optional; A boolean indicating if the resulting causal estimates
+                should be compared to previous expectations. Defaults to True.
             generate_report: Optional; A boolean indicating if the causal graph, heatmaps and
                 estimates should be written to a pdf.
         """
-        estim = estimator.Estimator(self.paths)
+        estim = estimator.Estimator(self.paths, validation_dict=self.knowledge['expected_effects'])
         estim.data = self.data
         estim.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
-                                     show_heatmaps
-                                     )
+                                     show_heatmaps, show_validation)
         if generate_pdf_report:
             estim.generate_pdf_report()
-        self._estim = estim
+        self._estimator = estim

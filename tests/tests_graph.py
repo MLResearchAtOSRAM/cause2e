@@ -1,5 +1,5 @@
 import unittest
-from cause2e import graph, path_mgr, discovery
+from cause2e import _graph, path_mgr, discovery
 import networkx as nx
 import os
 
@@ -12,8 +12,8 @@ class TestGraphToplevel(unittest.TestCase):
         edges = {('A', 'C'), ('B', 'D'), ('C', 'D'), ('D', 'E')}
         G.add_edges_from(edges)
         undirected_edges = {frozenset({'A', 'B'})}
-        technical = graph.GraphNetworkx(G, undirected_edges)
-        self.graph = graph.Graph(technical)
+        technical = _graph._GraphNetworkx(G, undirected_edges)
+        self.graph = _graph.Graph(technical)
 
     def test_add_directed_edge(self):
         self.graph.add_edge('A', 'E')
@@ -121,7 +121,7 @@ class TestGraphNetworkx(unittest.TestCase):
         edges = {('A', 'B'), ('A', 'C'), ('B', 'D'), ('C', 'D'), ('D', 'E')}
         G.add_edges_from(edges)
         undirected_edges = {frozenset({'A', 'B'})}
-        self.graph = graph.GraphNetworkx(G, undirected_edges)
+        self.graph = _graph._GraphNetworkx(G, undirected_edges)
 
     def check_all_edges(self, undirected_edges, directed_edges):
         self.assertEqual(self.graph.undirected_edges, undirected_edges)
@@ -158,8 +158,8 @@ class TestGraphTetrad(unittest.TestCase):
         learner.read_csv(nrows=50)
         learner.discrete = {'v0'}
         learner.continuous = set(learner.data.columns) - learner.discrete
-        learner.run_search(max_degree=5, keep_vm=True)
-        self.graph = learner.searcher._graph_internal
+        learner.run_quick_search(verbose=False, save_graph=False)
+        self.graph = learner._searcher.graph_output._graph_custom_tetrad
 
     def compare_graphs(self, other_graph):
         undirected_edges = other_graph.undirected_edges

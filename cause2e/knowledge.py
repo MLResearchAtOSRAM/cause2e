@@ -131,6 +131,20 @@ class KnowledgeChecker:
         return True
 
 
+class ValidationCreator:
+    """Main class for recording expectations about causal effects that are validated after estimation.
+
+    Attributes:
+        expected_effects: A dictionary containing expected quantitative causal effects. This is
+            evaluated after estimation of the effects.
+    """
+    def __init__(self):
+        self.expected_effects = {}
+
+    def add_expected_effect(self, effect, expected_val):
+        self.expected_effects[effect] = {'Expected': expected_val}
+
+
 def _set_product_multiple(set_pairs):
     """Helper function.
 
