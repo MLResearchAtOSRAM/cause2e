@@ -11,36 +11,45 @@ constraints.
 import itertools
 
 
-class ForbiddenEdgeCreator:
-    """Main class for creating forbidden edges from a temporal order of the variables.
+class EdgeCreator:
+    """Main class for creating required and forbidden edges from domain knowledge.
 
     Attributes:
-        temporal_order: A list of variable sets indicating the temporal order in which the
-            variables were generated. This is used to infer forbidden edges since the future
-            cannot cause the past.
+        forbidden_edges: A set of edges that must not appear in the causal graph.
+        required_edges: A set of edges that must appear in the causal graph.
     """
-    def __init__(self, temporal_order=None):
-        """Inits ForbiddenEdgeCreator."""
-        self.temporal_order = temporal_order
+    def __init__(self):
+        """Inits EdgeCreator."""
         self.forbidden_edges = set()
+        self.required_edges = set()
 
-    def forbid_edges_from_temporal(self):
+    def forbid_edges_from_temporal(self, temporal_order):
         """Finds all pairs of variables such that the first variable cannot causally affect the second
         variable for temporal reasons.
+        
+        Args:
+            temporal_order: A list of variable sets indicating the temporal order in which the
+                variables were generated. This is used to infer forbidden edges since the future
+                cannot cause the past.
         """
-        set_pairs = self._forbid_set_pairs_from_temporal()
+        set_pairs = self._forbid_set_pairs_from_temporal(temporal_order)
         self.forbidden_edges |= _set_product_multiple(set_pairs)
 
-    def _forbid_set_pairs_from_temporal(self):
+    def _forbid_set_pairs_from_temporal(self, temporal_order):
         """
         Returns all pairs of sets such that variables in
         the first set cannot causally affect variables in the
         second set.
+        
+        Args:
+            temporal_order: A list of variable sets indicating the temporal order in which the
+                variables were generated. This is used to infer forbidden edges since the future
+                cannot cause the past.
         """
         set_pairs = set()
-        for i, later in enumerate(self.temporal_order):
+        for i, later in enumerate(temporal_order):
             for j in range(i):
-                set_pairs.add((frozenset(later), frozenset(self.temporal_order[j])))
+                set_pairs.add((frozenset(later), frozenset(temporal_order[j])))
         return set_pairs
 
     def forbid_edges_within_group(self, group):
@@ -53,31 +62,90 @@ class ForbiddenEdgeCreator:
 
     def forbid_edges_from_groups(self,
                                  group,
-                                 no_inf_on_group=set(),
-                                 not_infd_by_group=set(),
+                                 incoming=set(),
+                                 outgoing=set(),
                                  exceptions=set()
                                  ):
         """Forbids edges between groups of variables.
 
         Args:
             group: A set containing variables.
-            no_inf_on_group: Optional; a set containing all variables that cannot affect variables
+            incoming: Optional; a set containing all variables that cannot affect variables
                 in 'group'. Defaults to None.
-            not_infd_by_group: Optional; a set containing all variables that cannot be affected by
+            outgoing: Optional; a set containing all variables that cannot be affected by
                 variables in 'group'. Defaults to None.
             exceptions: Optional; a set of edges that should not be forbidden even if the group
                 structure entails it. Defaults to None.
         """
-        edges = self._forbid_incoming_edges(group, no_inf_on_group)
-        edges |= self._forbid_outgoing_edges(group, not_infd_by_group)
-        edges -= exceptions
+        edges = self._create_edges_from_groups(group, incoming, outgoing, exceptions)
         self.forbidden_edges |= edges
 
-    def _forbid_incoming_edges(self, group, no_inf_on_group):
-        return _set_product(no_inf_on_group, group)
+    def require_edges_from_groups(self,
+                                  group,
+                                  incoming=set(),
+                                  outgoing=set(),
+                                  exceptions=set()
+                                  ):
+        """Requires edges between groups of variables.
 
-    def _forbid_outgoing_edges(self, group, not_infd_by_group):
-        return _set_product(group, not_infd_by_group)
+        Args:
+            group: A set containing variables.
+            incoming: Optional; a set containing all variables that must affect variables
+                in 'group'. Defaults to None.
+            outgoing: Optional; a set containing all variables that must be affected by
+                variables in 'group'. Defaults to None.
+            exceptions: Optional; a set of edges that should not be required even if the group
+                structure entails it. Defaults to None.
+        """
+        edges = self._create_edges_from_groups(group, incoming, outgoing, exceptions)
+        self.required_edges |= edges
+        
+    def _create_edges_from_groups(self,
+                                 group,
+                                 incoming=set(),
+                                 outgoing=set(),
+                                 exceptions=set()
+                                 ):
+        """Creates edges between groups of variables.
+
+        Args:
+            group: A set containing variables.
+            incoming: Optional; a set containing all variables that must (not) affect variables
+                in 'group'. Defaults to None.
+            outgoing: Optional; a set containing all variables that must (not) be affected by
+                variables in 'group'. Defaults to None.
+            exceptions: Optional; a set of edges that should not be required/forbidden even if 
+                the group structure entails it. Defaults to None.
+        """
+        edges = self._create_incoming_edges(group, incoming)
+        edges |= self._create_outgoing_edges(group, outgoing)
+        edges -= exceptions
+        return edges
+
+    def _create_incoming_edges(self, group, incoming):
+        return _set_product(incoming, group)
+
+    def _create_outgoing_edges(self, group, outgoing):
+        return _set_product(group, outgoing)
+    
+    def forget_edges(self):
+        """Forgets all the previously created edges to allow a new start."""
+        self.forbidden_edges = set()
+        self.required_edges = set()
+        
+    def show_edges(self):
+        """Shows all currently required/forbidden edges."""
+        print("-------------------")
+        print("Required edges:")
+        for edge in self.required_edges:
+            print(edge)
+        print("-------------------")
+        print("Forbidden edges:")
+        for edge in self.forbidden_edges:
+            print(edge)
+        print("-------------------")
+        
+        
 
 
 class KnowledgeChecker:
@@ -115,8 +183,8 @@ class KnowledgeChecker:
 
     def respects_forbidden(self):
         """Returns True if no forbidden edges are present, else raises Assertion error."""
-        edge_creator = ForbiddenEdgeCreator(self.temporal)
-        edge_creator.forbid_edges_from_temporal()
+        edge_creator = EdgeCreator()
+        edge_creator.forbid_edges_from_temporal(self.temporal)
         self.forbidden |= edge_creator.forbidden_edges
         existing_but_forbidden = self.existing & self.forbidden
         msg = f'Forbidden edges: {existing_but_forbidden}'

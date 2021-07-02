@@ -23,6 +23,7 @@ class StructureLearner():
     Attributes:
         paths: A cause2e.PathManager managing paths and file names.
         data: A pandas.Dataframe containing the data.
+        transformations: A list storing all the performed preprocessing transformations.
         variables: A set containing the names of all variables in the data.
         continuous: A set containing the names of all continuous variables in the data.
         discrete: A set containing the names of all discrete variables in the data.
@@ -63,7 +64,7 @@ class StructureLearner():
         return set(self.data.columns)
 
     @property
-    def _transformations(self):
+    def transformations(self):
         return self._preprocessor.transformations
 
     def combine_variables(self, name, input_cols, func, keep_old=True):
@@ -128,10 +129,17 @@ class StructureLearner():
         if not hasattr(self, 'preprocessor'):
             self._preprocessor = _preproc.Preprocessor(self.data)
 
-    def set_knowledge(self, forbidden=set(), required=set(), temporal=[], expected_effects={}):
+    def set_knowledge(self,
+                      edge_creator=None,
+                      forbidden=set(),
+                      required=set(),
+                      temporal=[],
+                      validation_creator=None):
         """Sets the domain knowledge that we have a about the causal graph.
 
         Args:
+            edge_creator: Optional; A cause2e.knowledge.EdgeCreator that has been used to create
+                required and forbidden edges.
             forbidden: Optional; A list of pairs indicating edges that must not occur in the
                 causal graph. Pair (a, b) indicates that the edge from variable a to variable b is
                 forbidden. Defaults to the empty set.
@@ -141,14 +149,41 @@ class StructureLearner():
             temporal: Optional; A list of variable sets indicating the temporal order in which the
                 variables were generated. This is used to infer forbidden edges since the future
                 cannot cause the past. Defaults to [].
-            expected_effects: Optional; A dictionary containing expected quantitative causal
-                effects. This is evaluated after estimation of the effects. Defaults to {}.
+            validation_creator: Optional; A cause2e.knowledge.ValidationCreator that has been used
+                to create a dictionary containing expected quantitative causal effects. These are 
+                evaluated after estimation of the effects. Defaults to None.
         """
+        if edge_creator:
+            forbidden = edge_creator.forbidden_edges
+            required = edge_creator.required_edges
+        if validation_creator:
+            expected_effects = validation_creator.expected_effects
+        else:
+            expected_effects = {}
         self.knowledge = {'forbidden': forbidden,
                           'required': required,
                           'temporal': temporal,
                           'expected_effects': expected_effects
                           }
+        
+    def show_knowledge(self):
+        """Shows all domain knowledge that is used for causal discovery."""
+        print("====================")
+        if self.knowledge:
+            print("Showing knowledge for graph search.\n")
+            print("Required edges:")
+            for edge in self.knowledge['required']:
+                print(edge)
+            print("--------------------")
+            print("Forbidden edges:")
+            for edge in self.knowledge['forbidden']:
+                print(edge)
+            print("--------------------")
+            print("Temporal order:")
+            print(self.knowledge['temporal'])
+        else:
+            print("No knowledge has been provided.")
+        print("====================")
 
     def erase_knowledge(self):
         """Erases all domain knowledge."""
@@ -450,10 +485,9 @@ class StructureLearner():
             generate_report: Optional; A boolean indicating if the causal graph, heatmaps and
                 estimates should be written to a pdf.
         """
-        estim = estimator.Estimator(self.paths, validation_dict=self.knowledge['expected_effects'])
-        estim.data = self.data
-        estim.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
-                                     show_heatmaps, show_validation)
+        self._estimator = estimator.Estimator.from_learner(self)
+        self._estimator.data = self.data
+        self._estimator.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
+                                               show_heatmaps, show_validation)
         if generate_pdf_report:
-            estim.generate_pdf_report()
-        self._estimator = estim
+            self._estimator.generate_pdf_report()

@@ -164,9 +164,9 @@ class ResultManager:
                 where the heatmaps and dataframes should be saved. Defaults to None.
         """
         if save_to_name:
-            print("Showing and saving heat matrices of the causal estimates.\n")
+            print("Showing and saving heatmaps of the causal estimates.\n")
         else:
-            print("Showing heat matrices of the causal estimates.\n")
+            print("Showing heatmaps of the causal estimates.\n")
         self.show_heatmap('nonparametric-ate', save_to_name)
         self.show_heatmap('nonparametric-nde', save_to_name)
         self.show_heatmap('nonparametric-nie', save_to_name)
@@ -203,7 +203,7 @@ class ResultManager:
         df, title = self._select_heatmap_input(estimand_type)
         df.update(df.applymap('{:,.2f}'.format))
         plt.ioff()
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(15, 15))
         fig.patch.set_visible(False)
         ax.axis('off')
         ax.axis('tight')
@@ -261,7 +261,9 @@ class ResultManager:
             result_str += self._generate_validation_strings(failed_validations, 'Failed')
         if save_to_name:
             self._save_validations_as_png(result_str, save_to_name, img_width, img_height)
+        print("================================")
         print(result_str)
+        print("================================")
         
     def _generate_validation_strings(self, effect_names, description):
         """Returns a subset of validation results in pretty string format.
