@@ -21,6 +21,11 @@ class Graph:
     """Top level graph class.
 
     Attributes:
+        edges: The set of edges in the graph, stored as pairs (node_1, node_2) for directed edges
+            or as sets {node_1, node_2} for undirected edges.
+        undirected_edges: The set of undirected edges.
+        directed_edges: The set of directed_edges.
+        nodes: The set of nodes in the graph, stored as strings.
         dot: A pydot dot graph representation.
         png: A png representation.
     """
@@ -32,6 +37,22 @@ class Graph:
             self._technical = self._graph_custom_tetrad.to_GraphNetworkx()
         else:
             self._technical = intelligent_graph
+            
+    @property
+    def directed_edges(self):
+        return self._technical.directed_edges
+
+    @property
+    def undirected_edges(self):
+        return self._technical.undirected_edges
+    
+    @property
+    def edges(self):
+        return self._technical.edges
+    
+    @property
+    def nodes(self):
+        return self._technical.nodes
 
     def add_edge(self, source, destination, directed=True, show=True):
         """Adds an edge to the graph.
@@ -197,7 +218,16 @@ class Graph:
 
     def to_graph_databricks(self, name):
         return GraphDatabricks(self._technical, name)
+    
+    def print_edge_analysis(self, knowledge):
+        """Analyzes which part of the edges were forced by domain knowledge.
 
+        Args:
+            knowledge: A knowledge dictionary containing required and forbidden edges.
+        """
+        edge_analyzer = _EdgeAnalyzer(self.nodes, self.directed_edges, knowledge)
+        edge_analyzer.print_edge_analysis()
+        
 
 class GraphDatabricks(Graph):
     """A subclass of Graph that enables showing the graph on Databricks."""
@@ -257,7 +287,7 @@ class _GraphNetworkx:
 
     @property
     def nodes(self):
-        return itertools.chain.from_iterable(self.edges)
+        return set(itertools.chain.from_iterable(self.edges))
 
     def to_dot(self):
         """Returns a pydot dot graph representation of the graph."""
@@ -489,3 +519,58 @@ class _GraphTetrad:
         graph_networkx = _GraphNetworkx(nx_graph, self.undirected_edges)
         graph_networkx.verify_identical_edges(self.edges)
         return graph_networkx
+
+
+class _EdgeAnalyzer:
+    """Helper class for analyzing which part of the edges were forced by domain knowledge."""
+    def __init__(self, nodes, edges, knowledge):
+        self._nodes = nodes
+        self._edges = edges
+        self._knowledge = knowledge
+        
+    def print_edge_analysis(self):
+        """Analyzes which part of the edges were forced by domain knowledge."""
+        print("================================")
+        self._print_forced_edges()
+        print("--------------------------------")
+        self._print_unforced_edges()
+        print("--------------------------------")
+        self._print_remaining_allowed_edges()
+        print("================================")
+
+    def _print_forced_edges(self):
+        print("The following present edges were forced by domain knowledge:")
+        for edge in self._get_forced_edges():
+            print(edge)
+            
+    def _print_unforced_edges(self):
+        print("The following present edges were not forced by domain knowledge:")
+        for edge in self._get_unforced_edges():
+            print(edge)
+
+    def _get_forced_edges(self):
+        return {edge for edge in self._edges.intersection(self._knowledge['required'])}
+    
+    def _get_unforced_edges(self):
+        forced_edges = self._get_forced_edges()
+        return self._edges - forced_edges
+    
+    def _print_remaining_allowed_edges(self):
+        print("The following missing edges were not forbidden by domain knowledge:")
+        for edge in self._get_remaining_allowed_edges():
+            print(edge)
+    
+    def _get_remaining_allowed_edges(self):
+        allowed_edges = self._get_allowed_edges()
+        return allowed_edges - self._edges
+    
+    def _get_allowed_edges(self):
+        possible_edges = self._get_all_possible_edges()
+        return possible_edges - self._knowledge['forbidden']
+    
+    def _get_all_possible_edges(self):
+        possible_edges = set()
+        for source_node in self._nodes:
+            for destination_node in self._nodes - {source_node}:
+                possible_edges.add((source_node, destination_node))
+        return possible_edges

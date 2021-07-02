@@ -409,6 +409,10 @@ class StructureLearner():
             A boolean that is True if and only if the graph respects the domain knowledge.
         """
         return self.graph.respects_knowledge(self.knowledge)
+    
+    def print_edge_analysis(self):
+        """Analyzes which part of the edges were forced by domain knowledge."""
+        self.graph.print_edge_analysis(self.knowledge)
 
     def save_graphs(self, file_extensions=['dot', 'png', 'svg'], verbose=True, strict=True):
         """Saves the causal graph in various file formats.
