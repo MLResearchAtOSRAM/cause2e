@@ -54,6 +54,25 @@ class Estimator():
         self._quick_results_list = []
         self._validation_dict = validation_dict
 
+    @classmethod
+    def from_learner(cls, learner, same_data=False):
+        if learner.knowledge:
+            validation_dict = learner.knowledge['expected_effects']
+        else:
+            validation_dict = {}
+        if same_data:
+            estim = cls(paths=learner.paths,
+                        validation_dict=validation_dict,
+                        spark=learner.spark)
+            estim.data = learner.data
+            return estim
+        else:
+            return cls(paths=learner.paths,
+                       transformations=learner.transformations,
+                       validation_dict=validation_dict,
+                       spark=learner.spark)
+
+
     @property
     def _reader(self):
         return _reader.Reader(self.paths.full_data_name,
@@ -81,6 +100,63 @@ class Estimator():
         """
         self._ensure_preprocessor()
         self._preprocessor.apply_stored_transformations(self.transformations, vals_list)
+        
+    def combine_variables(self, name, input_cols, func, keep_old=True):
+        """Combines data from existing variables into a new variable.
+
+        Args:
+            name: A string indicating the name of the new variable.
+            input_cols: A list containing the names of the variables that are used for generating
+                the new variable.
+            func: A function describing how the new variable is calculated from the input variables.
+            keep_old: Optional; A boolean indicating if we want to keep the input variables in our
+                data. Defaults to True.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.combine_variables(name, input_cols, func, keep_old)
+
+    def add_variable(self, name, vals):
+        """Adds a new variable to the data.
+
+        Args:
+            name: A string indicating the name of the new variable.
+            vals: A column of values for the new variable.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.add_variable(name, vals)
+
+    def delete_variable(self, name):
+        """Deletes a variable from the data.
+
+        Args:
+            name: A string indicating the name of the target variable.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.delete_variable(name)
+
+    def rename_variable(self, current_name, new_name):
+        """Renames a variable in the data.
+
+        Args:
+            current_name: A string indicating the current name of the variable.
+            new_name: A string indicating the desired new name of the variable.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.rename_variable(current_name, new_name)
+
+    def normalize_variables(self):
+        """Replaces data for all variables by their z-scores."""
+        self._ensure_preprocessor()
+        self._preprocessor.normalize_variables()
+
+    def normalize_variable(self, name):
+        """Replaces a variable by its z-scores.
+
+        Args:
+            name: A string indicating the name of the target variable.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.normalize_variable(name)
 
     def _ensure_preprocessor(self):
         """Ensures that a preprocessor is initialized."""
@@ -156,11 +232,17 @@ class Estimator():
                         msg = "No mediation analysis possible. Look at the ATEs instead."
                         self._quick_results_list.append([treatment, outcome, estimand_type,
                                                          float("NaN"), msg, msg, msg])
+                        effect = (treatment, outcome, estimand_type)
+                        if effect in self._validation_dict:
+                            self._validate_effect(effect)
                         continue
                     except AssertionError:
                         msg = "No causal path"
                         self._quick_results_list.append([treatment, outcome, estimand_type,
                                                          0.0, msg, msg, msg])
+                        effect = (treatment, outcome, estimand_type)
+                        if effect in self._validation_dict:
+                            self._validate_effect(effect)
                         continue
         if show_heatmaps:
             self.show_heatmaps()
@@ -212,8 +294,8 @@ class Estimator():
                            + "nonparametric-nie")
         if robustness_method:
             self.check_robustness(robustness_method, verbose)
-        effect = (treatment, outcome, estimand_type)
         self._store_results(robustness_method)
+        effect = (treatment, outcome, estimand_type)
         if effect in self._validation_dict:
             self._validate_effect(effect)
             
@@ -294,7 +376,7 @@ class Estimator():
         if verbose:
             print(self.robustness_info)
             
-    def _validate_effect(self, effect):#document #should this go into a new class?
+    def _validate_effect(self, effect):#should this go into a new class?
         """Checks if an estimated effect matches previous expectations.
         
         Args:
