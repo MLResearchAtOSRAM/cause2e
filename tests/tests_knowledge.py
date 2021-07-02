@@ -1,7 +1,7 @@
 import unittest
 from cause2e.knowledge import (_set_product,
                                _set_product_multiple,
-                               ForbiddenEdgeCreator,
+                               EdgeCreator,
                                KnowledgeChecker
                                )
 
@@ -35,12 +35,12 @@ class TestKnowledgeGeneration(unittest.TestCase):
         self.assertEqual(result, result_manual)
 
     def test_edge_creator(self):
-        edge_creator = ForbiddenEdgeCreator(self.order)
+        edge_creator = EdgeCreator()
         result_manual = {(self.order[1], self.order[0]),
                          (self.order[2], self.order[0]),
                          (self.order[2], self.order[1])
                          }
-        result = edge_creator._forbid_set_pairs_from_temporal()
+        result = edge_creator._forbid_set_pairs_from_temporal(self.order)
         self.assertEqual(result, result_manual)
 
 
