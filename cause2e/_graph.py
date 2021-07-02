@@ -107,7 +107,7 @@ class Graph:
         return self._technical.has_node(name)
 
     def _final_checks(self, knowledge):
-        assert self.is_acyclic()
+        assert self.is_acyclic(), 'The graph contains at least one directed cycle!'
         return self.respects_knowledge(knowledge)
 
     def is_acyclic(self):
