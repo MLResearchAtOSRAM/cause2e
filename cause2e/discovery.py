@@ -468,7 +468,6 @@ class StructureLearner():
                                                ],
                                verbose=False,
                                show_tables=True,
-                               save_tables=True,
                                show_heatmaps=True,
                                show_validation=True,
                                generate_pdf_report=True):
@@ -480,18 +479,14 @@ class StructureLearner():
                 analysis. Defaults to False.
             show_tables: Optional; A boolean indicating if the resulting causal estimates should be
                 displayed in tabular form. Defaults to True.
-            save_tables: Optional; A boolean indicating if the resulting causal estimates should be
-                written to a csv. Defaults to True.
             show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
                 be displayed and saved in heatmap form. Defaults to True.
             show_validation: Optional; A boolean indicating if the resulting causal estimates
                 should be compared to previous expectations. Defaults to True.
-            generate_report: Optional; A boolean indicating if the causal graph, heatmaps and
-                estimates should be written to a pdf.
+            generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
+                validations and estimates should be written to files and combined into a pdf.
         """
         self._estimator = estimator.Estimator.from_learner(self)
         self._estimator.data = self.data
-        self._estimator.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
-                                               show_heatmaps, show_validation)
-        if generate_pdf_report:
-            self._estimator.generate_pdf_report()
+        self._estimator.run_all_quick_analyses(estimand_types, verbose, show_tables, show_heatmaps,
+                                               show_validation, generate_pdf_report)

@@ -41,7 +41,6 @@ class Estimator():
             estimated effect.
         robustness_info: A dowhy.causal_refuter.CausalRefutation indicating the results of the most
             recent robustness check.
-        quick_results: A pandas.DataFrame storing the results of calls to the quick_analysis method.
         spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
             None.
     """
@@ -175,9 +174,9 @@ class Estimator():
                                                ],
                                verbose=False,
                                show_tables=True,
-                               save_tables=True,
                                show_heatmaps=True,
-                               show_validation=True):
+                               show_validation=True,
+                               generate_pdf_report=True):
         """Performs all possible quick causal anlyses with preset parameters.
 
         Args:
@@ -186,16 +185,16 @@ class Estimator():
                 analysis. Defaults to False.
             show_tables: Optional; A boolean indicating if the resulting causal estimates should be
                 displayed in tabular form. Defaults to True.
-            save_tables: Optional; A boolean indicating if the resulting causal estimates should be
-                written to a csv. Defaults to True.
             show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
                 be displayed and saved in heatmap form. Defaults to True.
             show_validation: Optional; A boolean indicating if the resulting causal estimates should
                 be compared to previous expectations. Defaults to True.
+            generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
+                validations and estimates should be written to files and combined into a pdf.
         """
         vars = self.variables
-        self.run_multiple_quick_analyses(vars, vars, estimand_types, verbose, show_tables,
-                                         save_tables, show_heatmaps, show_validation)
+        self.run_multiple_quick_analyses(vars, vars, estimand_types, verbose, show_tables, show_heatmaps,
+                                         show_validation, generate_pdf_report)
 
     def run_multiple_quick_analyses(self,
                                     treatments,
@@ -203,9 +202,9 @@ class Estimator():
                                     estimand_types,
                                     verbose=False,
                                     show_tables=True,
-                                    save_tables=True,
                                     show_heatmaps=True,
-                                    show_validation=True):
+                                    show_validation=True,
+                                    generate_pdf_report=True):
         """Performs multiple quick causal analyses with preset parameters.
 
         Args:
@@ -216,12 +215,12 @@ class Estimator():
                 analysis. Defaults to False.
             show_tables: Optional; A boolean indicating if the resulting causal estimates should be
                 displayed in tabular form. Defaults to True.
-            save_tables: Optional; A boolean indicating if the resulting causal estimates should be
-                written to a csv. Defaults to True.
             show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
                 be displayed and saved in heatmap form. Defaults to True.
             show_validation: Optional; A boolean indicating if the resulting causal estimates should
                 be compared to previous expectations. Defaults to True.
+            generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
+                validations and estimates should be written to files and combined into a pdf.
         """
         for treatment in treatments:
             for outcome in outcomes:
@@ -244,14 +243,14 @@ class Estimator():
                         if effect in self._validation_dict:
                             self._validate_effect(effect)
                         continue
-        if show_heatmaps:
-            self.show_heatmaps()
-        if show_validation:
-            self.show_validation()
-        if show_tables:
-            self.show_quick_results(save=False)
-        if save_tables:
-            self.save_quick_results()
+        if show_heatmaps or generate_pdf_report:
+            self.show_heatmaps(save=generate_pdf_report)
+        if show_validation or generate_pdf_report:
+            self.show_validation(save=generate_pdf_report)
+        if show_tables or generate_pdf_report:
+            self.show_quick_results(save=generate_pdf_report)
+        if generate_pdf_report:
+            self.generate_pdf_report()
 
     def run_quick_analysis(self,
                            treatment,
@@ -274,6 +273,7 @@ class Estimator():
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
         """
+        #TODO: fix error when input is categorical (e.g. string-type season in sprinkler data)
         self.initialize_model(treatment, outcome, estimand_type)
         self.identify_estimand(verbose, proceed_when_unidentifiable=True)
         if estimand_type == 'nonparametric-ate':
@@ -451,10 +451,6 @@ class Estimator():
         self._quick_results_list.append(results)
 
     @property
-    def quick_results(self):
-        return self._result_mgr.quick_results
-
-    @property
     def _result_mgr(self):
         return _result_mgr.ResultManager(self._quick_results_list, self._validation_dict)
 
@@ -464,14 +460,11 @@ class Estimator():
 
     def show_quick_results(self, save=True):
         """Shows all results from quick analyses in tabular form."""
-        self._result_mgr.show_quick_results()
         if save:
-            self.save_quick_results()
-
-    def save_quick_results(self, line_terminator='\r'):
-        """Saves all results from quick analyses in tabular form in a csv."""
-        name = self._get_results_csv_name()
-        self._result_mgr.save_quick_results(name, line_terminator)
+            name = self._get_results_csv_name()
+            self._result_mgr.show_quick_results(name)
+        else:
+            self._result_mgr.show_quick_results()
 
     def _get_results_csv_name(self):
         return self.paths.create_output_name('csv', '_results')
