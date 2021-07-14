@@ -158,7 +158,7 @@ class TestGraphTetrad(unittest.TestCase):
         learner.read_csv(nrows=50)
         learner.discrete = {'v0'}
         learner.continuous = set(learner.data.columns) - learner.discrete
-        learner.run_quick_search(verbose=False, save_graph=False)
+        learner.run_quick_search(verbose=False, save_graph=False, show_graph=False)
         self.graph = learner._searcher.graph_output._graph_custom_tetrad
 
     def compare_graphs(self, other_graph):

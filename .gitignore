@@ -12,4 +12,6 @@ causal_model.png
 *results.csv
 *heatmap*
 *validation_*
+*largest_effects*
 test_notebook.ipynb
+*edge_analysis*

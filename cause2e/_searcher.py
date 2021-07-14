@@ -175,7 +175,7 @@ class TetradSearcher:
     def _get_graphs(self):
         """Extracts the causal graph from an internal TETRAD format into a cause2e.Graph."""
         tetrad_graph = self._tetrad.getTetradGraph()
-        self.graph_output = _graph.Graph(tetrad_graph, from_tetrad=True)
+        self.graph_output = _graph.Graph(tetrad_graph, from_tetrad=True, knowledge=self._knowledge)
 
     def _get_scores(self):
         pass
