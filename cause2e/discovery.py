@@ -296,9 +296,19 @@ class StructureLearner():
         if save_graph:
             self.save_graphs()
 
-    def display_graph(self):
-        """Shows the causal graph."""
+    def display_graph(self, edge_analysis=True):
+        """Shows the causal graph.
+        
+        Args:
+            edge_analysis: Optional; A boolean indicating if an analysis about the influence of
+                domain knowledge on the resulting graph should be shown.
+        """
         self.graph.show()
+        self.print_edge_analysis()
+    
+    def print_edge_analysis(self):
+        """Analyzes which part of the edges were forced by domain knowledge."""
+        self.graph.print_edge_analysis()
 
     def add_edge(self, source, destination, directed=True, show=True):
         """Adds an edge to the causal graph.
@@ -436,6 +446,9 @@ class StructureLearner():
         """
         name = self._get_graph_name(file_extension)
         self.graph.save(name, file_extension, verbose, strict, self.knowledge)
+        if file_extension == 'png':
+            name_analysis = self._get_analysis_name(name)
+            self.graph.save_edge_analysis(name_analysis)
 
     def _get_graph_name(self, file_extension):
         """Returns the name for the files in which the causal graph is stored.
@@ -456,6 +469,9 @@ class StructureLearner():
         if self.knowledge is None:
             additions += '_no_knowledge'
         return additions
+    
+    def _get_analysis_name(self, graph_name):
+        return graph_name[:-4] + '_edge_analysis.png'
 
     def run_all_quick_analyses(self,
                                estimand_types=['nonparametric-ate',
@@ -464,9 +480,9 @@ class StructureLearner():
                                                ],
                                verbose=False,
                                show_tables=True,
-                               save_tables=True,
                                show_heatmaps=True,
                                show_validation=True,
+                               show_largest_effects=True,
                                generate_pdf_report=True):
         """Performs all possible quick causal anlyses with preset parameters.
 
@@ -476,18 +492,22 @@ class StructureLearner():
                 analysis. Defaults to False.
             show_tables: Optional; A boolean indicating if the resulting causal estimates should be
                 displayed in tabular form. Defaults to True.
-            save_tables: Optional; A boolean indicating if the resulting causal estimates should be
-                written to a csv. Defaults to True.
             show_heatmaps: Optional; A boolean indicating if the resulting causal estimates should
                 be displayed and saved in heatmap form. Defaults to True.
             show_validation: Optional; A boolean indicating if the resulting causal estimates
                 should be compared to previous expectations. Defaults to True.
-            generate_report: Optional; A boolean indicating if the causal graph, heatmaps and
-                estimates should be written to a pdf.
+            show_largest_effects: Optional; A boolean indicating if the largest causal effects should
+                be listed. Defaults to True.
+            generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
+                validations and estimates should be written to files and combined into a pdf.
         """
         self._estimator = estimator.Estimator.from_learner(self)
         self._estimator.data = self.data
-        self._estimator.run_all_quick_analyses(estimand_types, verbose, show_tables, save_tables,
-                                               show_heatmaps, show_validation)
-        if generate_pdf_report:
-            self._estimator.generate_pdf_report()
+        self._estimator.run_all_quick_analyses(estimand_types,
+                                               verbose,
+                                               show_tables,
+                                               show_heatmaps,
+                                               show_validation,
+                                               show_largest_effects,
+                                               generate_pdf_report,
+                                               )
