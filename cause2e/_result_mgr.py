@@ -82,27 +82,15 @@ class ResultManager:
         """
         self._validation_mgr.show_validation(save_to_name)
         
-    def generate_pdf_report(self, output_name, graph, edge_analysis, heatmaps, validations,
-                            largest_effects, results, dpi=(300, 300)):
+    def generate_pdf_report(self, output_name, input_names, dpi=(300, 300)):
         """Generates a pdf report with the causal graph and all results.
 
         Args:
             output_name: A string indicating the name of the output pdf.
-            graph: A string indicating the name of the png where the causal graph is stored.
-            edge_analysis: A string indicating the name of the png where the edge analysis is
-                stored.
-            heatmaps: A list of strings indicating the names of the pngs where the heatmaps are
-                stored.
-            validations: A list of strings indicating the names of the pngs where the validation
-                results are stored.
-            largest_effects: A list of strings indicating the names of the pngs where the largest
-                causal effects are stored.
-            results: A list of strings indicating the names of the pngs where the quantiative
-                results are stored.
+            input_names: A list of strings indicating the names of the pngs used for creating the pdf.
             dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
         """
-        _generate_pdf_report(output_name, graph, edge_analysis, heatmaps, validations,
-                             largest_effects, results, dpi)
+        _generate_pdf_report(output_name, input_names, dpi)
 
 
 class _NumericResultManager:
@@ -622,27 +610,14 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     plt.close(fig)
        
 
-def _generate_pdf_report(output_name, graph, edge_analysis, heatmaps, validations, largest_effects,
-                         results, dpi=(300, 300)):
-    # TODO: Put all auxiliary files in separate folder to avoid clutter.
+def _generate_pdf_report(output_name, input_names, dpi=(300, 300)):
     """Generates a pdf report with the causal graph and all results.
 
     Args:
         output_name: A string indicating the name of the output pdf.
-        graph: A string indicating the name of the png where the causal graph is stored.
-        edge_analysis: A string indicating the name of the png where the edge analysis is
-                stored.
-        heatmaps: A list of strings indicating the names of the pngs where the heatmaps are
-            stored.
-        validations: A list of strings indicating the names of the pngs where the validation
-            results are stored.
-        largest_effects: A list of strings indicating the names of the pngs where the largest
-            causal effects are stored.
-        results: A list of strings indicating the names of the pngs where the quantiative
-            results are stored.
+        input_names: A list of strings indicating the names of the pngs used for creating the pdf.
         dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
     """
-    input_names = [graph] + [edge_analysis] + heatmaps + validations + largest_effects + results
     ims = [_convert_rgba_to_rgb(filename) for filename in input_names]
     im = ims[0]
     im_list = ims[1:]

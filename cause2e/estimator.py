@@ -486,13 +486,10 @@ class Estimator():
                 Defaults to True.
         """
         if save:
-            name = self._get_heatmap_name()
+            name = self.paths.output_name_stump
             self._result_mgr.show_heatmaps(name)
         else:
             self._result_mgr.show_heatmaps()
-
-    def _get_heatmap_name(self):
-        return self.paths.png_name[:-4]
 
     def get_quick_result_estimate(self, treatment, outcome, estimand_type):
         """Returns a stored estimated effect.
@@ -525,7 +522,7 @@ class Estimator():
                 Defaults to True.
         """
         if save:
-            name = self._get_heatmap_name()
+            name = self.paths.output_name_stump
             self._result_mgr.show_largest_effects(estimand_type, n_results, name)
         else:
             self._result_mgr.show_largest_effects(estimand_type, n_results)
@@ -538,7 +535,7 @@ class Estimator():
                 Defaults to True.
         """
         if save:
-            name = self._get_heatmap_name()
+            name = self.paths.output_name_stump
             self._result_mgr.show_validation(name)
         else:
             self._result_mgr.show_validation()
@@ -549,31 +546,8 @@ class Estimator():
         Args:
             dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
         """
-        output_name = self.paths.create_output_name('pdf', '_report')
-        graph_name = self.paths.png_name # TODO: What if additions were made to the default name?
-        edge_analysis = self._create_edge_analysis_name()  # TODO: all name creations belong in the PathManager
-        estimand_types = ['ate', 'nde', 'nie']
-        heatmaps = [self._create_heatmap_name(x) for x in estimand_types]
-        validations = [self._create_validation_name(x) for x in ['True', 'False']]
-        largest_effects = [self._create_largest_effects_name(x) for x in estimand_types]
-        results = [self._create_result_name(x) for x in estimand_types]
-        self._result_mgr.generate_pdf_report(output_name, graph_name, edge_analysis, heatmaps, 
-                                             validations, largest_effects, results, dpi)
-
-    def _create_edge_analysis_name(self):
-        return self.paths.create_output_name('png', '_edge_analysis')
-
-    def _create_heatmap_name(self, estimand_type):
-        return self.paths.create_output_name('png', f'_heatmap_{estimand_type}')
-    
-    def _create_validation_name(self, valid):
-        return self.paths.create_output_name('png', f'_validation_{valid}')
-    
-    def _create_largest_effects_name(self, estimand_type):
-        return self.paths.create_output_name('png', f'_largest_effects_{estimand_type}')
-
-    def _create_result_name(self, estimand_type):
-        return self.paths.create_output_name('png', f'_results_{estimand_type}')
+        output_name, input_names = self.paths.create_reporting_paths()
+        self._result_mgr.generate_pdf_report(output_name, input_names, dpi)
 
     def compare_to_noncausal_regression(self, input_cols, drop_cols=False):
         """Prints a comparison of the causal estimate to a noncausal linear regression estimate.

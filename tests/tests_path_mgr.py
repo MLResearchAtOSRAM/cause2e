@@ -13,7 +13,7 @@ class TestPathMgrQuick(unittest.TestCase):
         old_name = os.path.join('pwd', 'output', 'exp_name') + '.dot'
         new_name = os.path.join('pwd', 'output', 'new_exp_name') + '.dot'
         self.assertEqual(self.mgr.dot_name, old_name)
-        self.mgr.experiment_name = 'new_exp_name'
+        self.mgr._experiment_name = 'new_exp_name'
         self.assertEqual(self.mgr.dot_name, new_name)
 
     def test_protection(self):
@@ -32,7 +32,7 @@ class TestPathMgrFull(unittest.TestCase):
         old_name = os.path.join('output_dir', 'exp_name') + '.dot'
         new_name = os.path.join('output_dir', 'new_exp_name') + '.dot'
         self.assertEqual(self.mgr.dot_name, old_name)
-        self.mgr.experiment_name = 'new_exp_name'
+        self.mgr._experiment_name = 'new_exp_name'
         self.assertEqual(self.mgr.dot_name, new_name)
 
     def test_protection(self):
