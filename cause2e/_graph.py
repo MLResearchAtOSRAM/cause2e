@@ -32,18 +32,24 @@ class Graph:
         png: A png representation.
     """
 
-    def __init__(self, intelligent_graph, from_tetrad=False, knowledge=None):
-        """Inits Graph from a cause2e._GraphNetworkx or directly from a TETRAD graph."""
-        if from_tetrad:
-            self._graph_custom_tetrad = _GraphTetrad(intelligent_graph)
-            self._technical = self._graph_custom_tetrad.to_GraphNetworkx()
-        else:
-            self._technical = intelligent_graph
+    def __init__(self, intelligent_graph, knowledge=None):
+        """Inits Graph from a cause2e._GraphNetworkx."""
+        self._technical = intelligent_graph
         if knowledge:
             self._knowledge = knowledge
         else:
             self._knowledge = {'required': set(), 'forbidden': set()}
-
+            
+    @classmethod
+    def from_tetrad(cls, tetrad_graph, knowledge=None):
+        """Inits Graph directly from a TETRAD graph."""
+        return cls(_GraphTetrad(tetrad_graph), knowledge)
+            
+    @classmethod
+    def from_edges(cls, directed_edges, undirected_edges, knowledge=None):
+        """Inits Graph directly from given edges."""
+        intelligent_graph = _GraphNetworkx.from_edges(directed_edges, undirected_edges)
+        return cls(intelligent_graph, knowledge)
             
     @property
     def directed_edges(self):
@@ -281,6 +287,13 @@ class _GraphNetworkx:
         """Inits _GraphNetworkx from a networkx digraph and a set of undirected edges."""
         self._graph = graph_nx
         self.undirected_edges = undirected_edges
+        
+    @classmethod
+    def from_edges(self, directed_edges, undirected_edges):
+        """Inits _GraphNetworkx from a sets of directed and undirected edges."""
+        nx_graph = nx.DiGraph()
+        nx_graph.add_edges_from(directed_edges)
+        return _GraphNetworkx(nx_graph, undirected_edges)
 
     @property
     def edges(self):
