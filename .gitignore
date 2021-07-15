@@ -6,12 +6,5 @@ causal_model.png
 /dist
 /build
 *.pyc
-*results_ate.png
-*results_nie.png
-*results_nde.png
-*results.csv
-*heatmap*
-*validation_*
-*largest_effects*
+/output
 test_notebook.ipynb
-*edge_analysis*
