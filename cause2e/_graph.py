@@ -41,10 +41,9 @@ class Graph:
             self._technical = intelligent_graph
         if knowledge:
             self._knowledge = knowledge
-            self._required_edges = knowledge['required']
         else:
-            self._knowledge = {}
-            self._required_edges = set()
+            self._knowledge = {'required': set(), 'forbidden': set()}
+
             
     @property
     def directed_edges(self):
@@ -180,7 +179,7 @@ class Graph:
 
     @property
     def dot(self):
-        return self._technical.to_dot(self._required_edges)
+        return self._technical.to_dot(self._knowledge['required'])
 
     @property
     def png(self):
@@ -194,22 +193,8 @@ class Graph:
 
     def show(self):
         "Shows the graph."
-        print('Proposed causal graph (edges required by domain knowledge are red):\n')
-        self._print_undirected_edges()
+        print('Proposed causal graph (edges required by domain knowledge in red, undirected edges in blue):\n')
         display(Image(self._png_display))
-
-    def _print_undirected_edges(self):
-        """Prints a list of all undirected edges in the graph."""
-        if self._technical.undirected_edges:
-            print('The following edges are undirected (colored in blue):\n')
-            for edge in self._technical.undirected_edges:
-                self._print_undirected_edge(edge)
-        else:
-            print('The graph is fully directed.\n')
-
-    def _print_undirected_edge(self, edge):
-        node_1, node_2 = edge
-        print(f'{node_1} --- {node_2}')
 
     def save(self, name, file_extension, verbose=True, strict=True, knowledge=None):
         """Saves the graph to a file.
@@ -241,8 +226,9 @@ class Graph:
 
     @property
     def _edge_analyzer(self):
-        return _EdgeAnalyzer(self.nodes, self.directed_edges, self._knowledge)
+        return _EdgeAnalyzer(self.nodes, self.directed_edges, self.undirected_edges, self._knowledge)
 
+    # TODO: Add edges modified in postprocessing to reporting and give them a separate color
     def save_edge_analysis(self, save_to_name):
         """Saves the edge analysis to a png file.
 
@@ -267,7 +253,6 @@ class GraphDatabricks(Graph):
     def show(self):
         """Prints an instruction for showing the graph on Databricks."""
         self._save_intermediate()
-        self._print_undirected_edges()
         command = 'displayHTML(learner.graph_databricks._src_str)'
         print(f"Run {command} to show the graph.")
 
@@ -590,9 +575,10 @@ class _GraphTetrad:
 
 class _EdgeAnalyzer:
     """Helper class for analyzing which part of the edges were forced by domain knowledge."""
-    def __init__(self, nodes, edges, knowledge):
+    def __init__(self, nodes, directed_edges, undirected_edges, knowledge):
         self._nodes = nodes
-        self._edges = edges
+        self._directed_edges = directed_edges
+        self._undirected_edges = undirected_edges
         self._knowledge = knowledge
         
     def print_edge_analysis(self, save_to_name=None):
@@ -603,6 +589,8 @@ class _EdgeAnalyzer:
                 where the edge information should be saved. Defaults to None.
         """
         print("================================")
+        self._print_undirected_edges()
+        print("--------------------------------")
         self._print_forced_edges()
         print("--------------------------------")
         self._print_unforced_edges()
@@ -611,6 +599,19 @@ class _EdgeAnalyzer:
         print("================================")
         if save_to_name:
             self.save_edge_analysis(save_to_name)
+            
+    def _print_undirected_edges(self):
+        """Prints a list of all undirected edges in the graph."""
+        if self._undirected_edges:
+            print('The following edges are undirected (colored in blue):')
+            for edge in self._undirected_edges:
+                self._print_undirected_edge(edge)
+        else:
+            print('The graph is fully directed.\n')
+
+    def _print_undirected_edge(self, edge):
+        node_1, node_2 = edge
+        print(f'{node_1} --- {node_2}')
 
     def _print_forced_edges(self):
         print("The following present edges were forced by domain knowledge:")
@@ -623,11 +624,11 @@ class _EdgeAnalyzer:
             print(edge)
 
     def _get_forced_edges(self):
-        return {edge for edge in self._edges.intersection(self._knowledge['required'])}
+        return {edge for edge in self._directed_edges.intersection(self._knowledge['required'])}
     
     def _get_unforced_edges(self):
         forced_edges = self._get_forced_edges()
-        return self._edges - forced_edges
+        return self._directed_edges - forced_edges
     
     def _print_remaining_allowed_edges(self):
         print("The following missing edges were not forbidden by domain knowledge:")
@@ -636,7 +637,7 @@ class _EdgeAnalyzer:
     
     def _get_remaining_allowed_edges(self):
         allowed_edges = self._get_allowed_edges()
-        return allowed_edges - self._edges
+        return allowed_edges - self._directed_edges
     
     def _get_allowed_edges(self):
         possible_edges = self._get_all_possible_edges()
@@ -660,4 +661,4 @@ class _EdgeAnalyzer:
         title = "Remaining allowed edges (all others forbidden by domain knowledge):"
         columns = ["Source", "Destination"]
         save_df_as_png(df, title, save_to_name, col_labels=columns, loc='upper left')
-        print("Saving edge analysis.\n")
+        print("Saving edge analysis.")
