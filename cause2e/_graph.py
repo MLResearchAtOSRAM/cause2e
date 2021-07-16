@@ -18,7 +18,7 @@ import pandas as pd
 from cause2e import knowledge
 from cause2e._result_mgr import save_df_as_png
 
-
+# TODO split this into several files
 class Graph:
     """Top level graph class.
 
@@ -35,15 +35,12 @@ class Graph:
     def __init__(self, intelligent_graph, knowledge=None):
         """Inits Graph from a cause2e._GraphNetworkx."""
         self._technical = intelligent_graph
-        if knowledge:
-            self._knowledge = knowledge
-        else:
-            self._knowledge = {'required': set(), 'forbidden': set()}
+        self._knowledge = _format_knowledge(knowledge)
             
     @classmethod
     def from_tetrad(cls, tetrad_graph, knowledge=None):
         """Inits Graph directly from a TETRAD graph."""
-        return cls(_GraphTetrad(tetrad_graph), knowledge)
+        return cls(_GraphTetrad(tetrad_graph).to_GraphNetworkx(), knowledge)
             
     @classmethod
     def from_edges(cls, directed_edges, undirected_edges, knowledge=None):
@@ -170,9 +167,8 @@ class Graph:
     def respects_knowledge(self, knowledge_dict):
         """Checks if the graph respects the domain knowledge.
 
-        This means that it contains all the edges that were required in the domain knowledge,
-        none of the edges that were forbidden in the domain knowledge
-        and no edge that goes against the temporal constraints of the domain knowledge.
+        This means that it contains all the edges that were required in the domain knowledge
+        and none of the edges that were forbidden in the domain knowledge.
 
         Args:
             knowledge_dict: A dictionary containing the domain knowledge.
@@ -215,7 +211,7 @@ class Graph:
             knowledge: Optional; A dictionary containing the domain knowledge. Defaults to None.
         """
         if verbose:
-            print(f'Saving {file_extension} file.')
+            print(f'Saving graph to {file_extension} file.')
         if strict:
             msg = 'Your graph is not a DAG or not compliant with the specified knowledge.'
             assert self._final_checks(knowledge), msg
@@ -270,6 +266,46 @@ class GraphDatabricks(Graph):
     def _save_intermediate(self):
         """Saves intermediate graph without enforcing acyclicity and domain knowledge."""
         self.save(self._name, 'svg', strict=False)
+        
+class GraphKnowledge(Graph):
+    """A subclass of Graph that enables visualizing domain knowledge."""
+
+    def __init__(self, knowledge, variables):
+        """Inits GraphKnowledge from domain knowledge."""
+        knowledge_ = _format_knowledge(knowledge)
+        intelligent_graph = _GraphNetworkx.from_edges(knowledge_['required'])
+        super().__init__(intelligent_graph, knowledge_)
+        self._variables = variables
+        self._allowed_edges = self._edge_analyzer.get_remaining_allowed_edges()
+        
+    @property
+    def dot(self):
+        return self._technical.to_dot(self._knowledge['required'], self._allowed_edges)
+    
+    @property
+    def _edge_analyzer(self):
+        return _EdgeAnalyzer(self.nodes, self.directed_edges, self.undirected_edges,
+                             self._knowledge, self._variables)
+        
+    def show(self):
+        "Shows the graph."
+        print('Causal graph constructed from domain knowledge:')
+        print('(Edges required by domain knowledge in red, remaining allowed edges dotted)\n')
+        display(Image(self._png_display))
+        
+    def save(self, name, file_extension, verbose=True):
+        """Saves the knowledge graph to a file.
+
+        Args:
+            name: A string indicating the name of the file to save.
+            file_extension: A string indicating the desired file extension.
+            verbose: Optional; A boolean indicating if confirmation messages should be printed.
+                Defaults to True.
+        """
+        if verbose:
+            print(f'Saving knowledge graph to {file_extension} file.')
+        self.dot.write(name, format=file_extension)
+    
 
 
 class _GraphNetworkx:
@@ -289,7 +325,7 @@ class _GraphNetworkx:
         self.undirected_edges = undirected_edges
         
     @classmethod
-    def from_edges(self, directed_edges, undirected_edges):
+    def from_edges(self, directed_edges, undirected_edges=set()):
         """Inits _GraphNetworkx from a sets of directed and undirected edges."""
         nx_graph = nx.DiGraph()
         nx_graph.add_edges_from(directed_edges)
@@ -314,17 +350,20 @@ class _GraphNetworkx:
     def nodes(self):
         return set(itertools.chain.from_iterable(self.edges))
 
-    def to_dot(self, required_edges=set()):
+    def to_dot(self, required_edges=set(), allowed_edges=set()):
         """Returns a pydot dot graph representation of the graph.
         
         Args:
             required_edges: Optional; A set of edges required by domain knowledge.
                 Defaults to set().
-        
+            allowed_edges: Optional; A set of absent edges allowed by domain knowledge.
+                Defaults to set().
         """
         dot = pydot.Dot(type='directed')
         self._add_directed_edges_to_dot(dot, required_edges)
         self._add_undirected_edges_to_dot(dot)
+        if allowed_edges:
+            self._add_allowed_edges_to_dot(dot, allowed_edges)
         dot.set_size('"25,20!"')
         return dot
     
@@ -376,6 +415,19 @@ class _GraphNetworkx:
                                     color="Blue",
                                     )
                          )
+        return dot
+    
+    def _add_allowed_edges_to_dot(self, dot, allowed_edges):
+        """Adds remaining allowed edges to a directed dot graph.
+
+        Args:
+            dot: A pydot dot graph.
+
+        Returns:
+            A pydot dot graph with additional allowed edges in dotted lines.
+        """
+        for edge in allowed_edges:
+            dot.add_edge(pydot.Edge(*edge, style='dotted'))
         return dot
 
     def verify_identical_edges(self, edges):
@@ -588,11 +640,12 @@ class _GraphTetrad:
 
 class _EdgeAnalyzer:
     """Helper class for analyzing which part of the edges were forced by domain knowledge."""
-    def __init__(self, nodes, directed_edges, undirected_edges, knowledge):
+    def __init__(self, nodes, directed_edges, undirected_edges, knowledge, additional_nodes=set()):
         self._nodes = nodes
         self._directed_edges = directed_edges
         self._undirected_edges = undirected_edges
         self._knowledge = knowledge
+        self._additional_nodes = additional_nodes
         
     def print_edge_analysis(self, save_to_name=None):
         """Analyzes which part of the edges were forced by domain knowledge.
@@ -645,10 +698,11 @@ class _EdgeAnalyzer:
     
     def _print_remaining_allowed_edges(self):
         print("The following missing edges were not forbidden by domain knowledge:")
-        for edge in self._get_remaining_allowed_edges():
+        for edge in self.get_remaining_allowed_edges():
             print(edge)
     
-    def _get_remaining_allowed_edges(self):
+    def get_remaining_allowed_edges(self):
+        """Returns the set of absent edges that are not forbidden by domain knowledge."""
         allowed_edges = self._get_allowed_edges()
         return allowed_edges - self._directed_edges
     
@@ -658,8 +712,9 @@ class _EdgeAnalyzer:
     
     def _get_all_possible_edges(self):
         possible_edges = set()
-        for source_node in self._nodes:
-            for destination_node in self._nodes - {source_node}:
+        nodes = self._nodes | self._additional_nodes
+        for source_node in nodes:
+            for destination_node in nodes - {source_node}:
                 possible_edges.add((source_node, destination_node))
         return possible_edges
 
@@ -670,8 +725,15 @@ class _EdgeAnalyzer:
             save_to_name: A string indicating the beginning of the name of the png file
                 where the edge information should be saved.
         """
-        df = pd.DataFrame(self._get_remaining_allowed_edges())
+        df = pd.DataFrame(self.get_remaining_allowed_edges())
         title = "Remaining allowed edges (all others forbidden by domain knowledge):"
         columns = ["Source", "Destination"]
         save_df_as_png(df, title, save_to_name, col_labels=columns, loc='upper left')
         print("Saving edge analysis.")
+
+
+def _format_knowledge(knowledge):
+    if knowledge:
+        return knowledge
+    else:
+        return {'required': set(), 'forbidden': set()}

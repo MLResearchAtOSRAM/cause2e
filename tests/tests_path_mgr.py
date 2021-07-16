@@ -6,7 +6,7 @@ import os
 class TestPathMgrQuick(unittest.TestCase):
 
     def setUp(self):
-        self.mgr = PathManagerQuick('exp_name', 'data_name', 'pwd')
+        self.mgr = PathManagerQuick('exp_name', 'data_name', 'pwd', nested_output=False)
 
     def test_new_exp_name(self):
         # other input args will work accordingly

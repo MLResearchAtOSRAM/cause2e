@@ -14,7 +14,7 @@ The proposed procedure is as follows:\n
 7) Save the graph in various file formats.\n
 """
 
-from cause2e import _reader, _preproc, _searcher, estimator
+from cause2e import _reader, _preproc, _graph, _searcher, estimator
 
 
 class StructureLearner():
@@ -28,7 +28,7 @@ class StructureLearner():
         continuous: A set containing the names of all continuous variables in the data.
         discrete: A set containing the names of all discrete variables in the data.
         knowledge: A dictionary containing domain knowledge about required or forbidden edges in
-            the causal graph. Temporal knowledge can also be used.
+            the causal graph. Known quantitative effects can be included for later validation.
         graph: A cause2e.Graph representing the causal graph.
         spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
             None.
@@ -130,47 +130,44 @@ class StructureLearner():
             self._preprocessor = _preproc.Preprocessor(self.data)
 
     def set_knowledge(self,
-                      edge_creator=None,
-                      forbidden=set(),
-                      required=set(),
-                      temporal=[],
-                      validation_creator=None):
+                      edge_creator,
+                      validation_creator=None,
+                      show=True,
+                      save=True):
         """Sets the domain knowledge that we have a about the causal graph.
 
         Args:
-            edge_creator: Optional; A cause2e.knowledge.EdgeCreator that has been used to create
+            edge_creator: A cause2e.knowledge.EdgeCreator that has been used to create
                 required and forbidden edges.
-            forbidden: Optional; A list of pairs indicating edges that must not occur in the
-                causal graph. Pair (a, b) indicates that the edge from variable a to variable b is
-                forbidden. Defaults to the empty set.
-            required: Optional; A list of pairs indicating edges that must occur in the
-                causal graph. Pair (a, b) indicates that the edge from variable a to variable b is
-                required. Defaults to the empty set.
-            temporal: Optional; A list of variable sets indicating the temporal order in which the
-                variables were generated. This is used to infer forbidden edges since the future
-                cannot cause the past. Defaults to [].
             validation_creator: Optional; A cause2e.knowledge.ValidationCreator that has been used
                 to create a dictionary containing expected quantitative causal effects. These are 
                 evaluated after estimation of the effects. Defaults to None.
+            show: Optional; A boolean indicating if information about the passed knowledge should
+                be displayed. Defaults to True.
+            show: Optional; A boolean indicating if information about the passed knowledge should
+                be saved to a png. Defaults to True.
         """
-        if edge_creator:
-            forbidden = edge_creator.forbidden_edges
-            required = edge_creator.required_edges
+        forbidden = edge_creator.forbidden_edges
+        required = edge_creator.required_edges
         if validation_creator:
             expected_effects = validation_creator.expected_effects
         else:
             expected_effects = {}
         self.knowledge = {'forbidden': forbidden,
                           'required': required,
-                          'temporal': temporal,
                           'expected_effects': expected_effects
                           }
+        if show:
+            self.show_knowledge()
+        if save:
+            self.save_knowledge()
         
     def show_knowledge(self):
         """Shows all domain knowledge that is used for causal discovery."""
         print("====================")
         if self.knowledge:
             print("Showing knowledge for graph search.\n")
+            self._knowledge_graph.show()
             print("Required edges:")
             for edge in self.knowledge['required']:
                 print(edge)
@@ -178,12 +175,24 @@ class StructureLearner():
             print("Forbidden edges:")
             for edge in self.knowledge['forbidden']:
                 print(edge)
-            print("--------------------")
-            print("Temporal order:")
-            print(self.knowledge['temporal'])
         else:
             print("No knowledge has been provided.")
         print("====================")
+    
+    @property
+    def _knowledge_graph(self):
+        return _graph.GraphKnowledge(self.knowledge, self.variables)
+    
+    def save_knowledge(self, file_extension='png', verbose=True):
+        """Saves the knowledge graph to a file.
+
+        Args:
+            file_extension: A string indicating the desired file extension.
+            verbose: Optional; A boolean indicating if confirmation messages should be printed.
+                Defaults to True.
+        """
+        name = self.paths.create_knowledge_graph_name(file_extension)
+        self._knowledge_graph.save(name, file_extension, verbose)
 
     def erase_knowledge(self):
         """Erases all domain knowledge."""
@@ -411,10 +420,9 @@ class StructureLearner():
     def respects_knowledge(self):
         """Checks if the causal graph respects the domain knowledge.
 
-        This means that it contains all the edges that were required in the domain knowledge,
-        none of the edges that were forbidden in the domain knowledge
-        and no edge that goes against the temporal constraints of the domain knowledge.
-
+        This means that it contains all the edges that were required in the domain knowledge
+        and none of the edges that were forbidden in the domain knowledge.
+        
         Returns:
             A boolean that is True if and only if the graph respects the domain knowledge.
         """
