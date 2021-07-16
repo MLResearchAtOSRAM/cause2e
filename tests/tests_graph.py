@@ -145,37 +145,5 @@ class TestGraphNetworkx(unittest.TestCase):
         directed_edges = {('A', 'B'), ('A', 'C'), ('C', 'D'), ('D', 'E')}
         self.check_all_edges(undirected_edges, directed_edges)
 
-
-class TestGraphTetrad(unittest.TestCase):
-    def setUp(self):
-        path = os.path.join('tests', 'fixtures')
-        paths = path_mgr.PathManager(experiment_name='bla',
-                                     data_name='linear_test.csv',
-                                     data_dir=path,
-                                     output_dir='blabla'
-                                     )
-        learner = discovery.StructureLearner(paths)
-        learner.read_csv(nrows=50)
-        learner.discrete = {'v0'}
-        learner.continuous = set(learner.data.columns) - learner.discrete
-        learner.run_quick_search(verbose=False, save_graph=False, show_graph=False)
-        self.graph = learner._searcher.graph_output._graph_custom_tetrad
-
-    def compare_graphs(self, other_graph):
-        undirected_edges = other_graph.undirected_edges
-        directed_edges = other_graph.directed_edges
-        self.assertEqual(other_graph.edges, undirected_edges, directed_edges)
-        self.check_all_edges(undirected_edges, directed_edges)
-
-    def check_all_edges(self, undirected_edges, directed_edges):
-        self.assertEqual(self.graph.undirected_edges, undirected_edges)
-        self.assertEqual(self.graph.directed_edges, directed_edges)
-        self.assertEqual(self.graph.edges, undirected_edges | directed_edges)
-
-    def test_nx_conversion(self):
-        nx_graph = self.graph.to_GraphNetworkx()
-        self.compare_graphs(nx_graph)
-
-
 if __name__ == '__main__':
     unittest.main()

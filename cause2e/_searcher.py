@@ -90,10 +90,9 @@ class TetradSearcher:
 
     @property
     def _tetrad_knowledge(self):
-        forbidden, required, temporal = self._format_knowledge_tetrad()
+        forbidden, required = self._format_knowledge_tetrad()
         return p.knowledge(forbiddirect=forbidden,
-                           requiredirect=required,
-                           addtemporal=temporal
+                           requiredirect=required
                            )
 
     def _format_knowledge_tetrad(self):
@@ -101,12 +100,10 @@ class TetradSearcher:
         if self._knowledge:
             forbidden = self._set_to_list(self._knowledge['forbidden'])
             required = self._set_to_list(self._knowledge['required'])
-            temporal = self._knowledge['temporal']
         else:
             forbidden = []
             required = []
-            temporal = []
-        return forbidden, required, temporal
+        return forbidden, required
 
     def _set_to_list(self, possible_set):
         if possible_set:
@@ -175,7 +172,7 @@ class TetradSearcher:
     def _get_graphs(self):
         """Extracts the causal graph from an internal TETRAD format into a cause2e.Graph."""
         tetrad_graph = self._tetrad.getTetradGraph()
-        self.graph_output = _graph.Graph(tetrad_graph, from_tetrad=True, knowledge=self._knowledge)
+        self.graph_output = _graph.Graph.from_tetrad(tetrad_graph, knowledge=self._knowledge)
 
     def _get_scores(self):
         pass

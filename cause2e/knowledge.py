@@ -22,6 +22,24 @@ class EdgeCreator:
         """Inits EdgeCreator."""
         self.forbidden_edges = set()
         self.required_edges = set()
+        
+    def forbid_edges(self, edges):
+        """Forbids multiple edges.
+        
+        Args:
+            edges: A set of edges.
+        """
+        for edge in edges:
+            self.forbid_edge(*edge)
+        
+    def forbid_edge(self, source, destination):
+        """Forbids an edge between two nodes.
+        
+        Args:
+            source: A string indicating the source node of the forbidden edge.
+            destination: A string indicating the destination node of the forbidden edge.
+        """
+        self.forbidden_edges.add((source, destination))
 
     def forbid_edges_from_temporal(self, temporal_order):
         """Finds all pairs of variables such that the first variable cannot causally affect the second
@@ -79,6 +97,24 @@ class EdgeCreator:
         """
         edges = self._create_edges_from_groups(group, incoming, outgoing, exceptions)
         self.forbidden_edges |= edges
+    
+    def require_edges(self, edges):
+        """Requires multiple edges.
+        
+        Args:
+            edges: A set of edges.
+        """
+        for edge in edges:
+            self.require_edge(*edge)
+    
+    def require_edge(self, source, destination):
+        """Requires an edge between two nodes.
+        
+        Args:
+            source: A string indicating the source node of the required edge.
+            destination: A string indicating the destination node of the required edge.
+        """
+        self.required_edges.add((source, destination))
 
     def require_edges_from_groups(self,
                                   group,
@@ -144,8 +180,6 @@ class EdgeCreator:
         for edge in self.forbidden_edges:
             print(edge)
         print("-------------------")
-        
-        
 
 
 class KnowledgeChecker:
@@ -155,7 +189,6 @@ class KnowledgeChecker:
         existing: A set of all edges that exist in the causal graph under consideration.
         forbidden: A set of all edges that contradict domain knowledge.
         required: A set of all edges that must exist according to domain knowledge.
-        temporal: A list containing sets of variables in the temporal order of their generation.
     """
 
     def __init__(self, edges, knowledge=None):
@@ -168,11 +201,9 @@ class KnowledgeChecker:
         if knowledge:
             self.forbidden = knowledge['forbidden']
             self.required = knowledge['required']
-            self.temporal = knowledge['temporal']
         else:
             self.forbidden = set()
             self.required = set()
-            self.temporal = []
 
     def respects_knowledge(self):
         """Returns a boolean indicating if all domain knowledge is respected."""
@@ -183,9 +214,6 @@ class KnowledgeChecker:
 
     def respects_forbidden(self):
         """Returns True if no forbidden edges are present, else raises Assertion error."""
-        edge_creator = EdgeCreator()
-        edge_creator.forbid_edges_from_temporal(self.temporal)
-        self.forbidden |= edge_creator.forbidden_edges
         existing_but_forbidden = self.existing & self.forbidden
         msg = f'Forbidden edges: {existing_but_forbidden}'
         assert not existing_but_forbidden, msg

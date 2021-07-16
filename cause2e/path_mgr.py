@@ -66,15 +66,20 @@ class PathManager():
     def create_reporting_paths(self):
         """Returns the names of pngs needed for reporting."""
         output_name = self.create_output_name('pdf', '_report')
+        knowledge_graph = self.create_knowledge_graph_name()
         graph = self.png_name # TODO: What if additions were made to the default name?
         edge_analysis = self._create_edge_analysis_name()
+        graphs = [knowledge_graph, graph, edge_analysis]
         estimand_types = ['ate', 'nde', 'nie']
         heatmaps = [self._create_heatmap_name(x) for x in estimand_types]
         validations = [self._create_validation_name(x) for x in ['True', 'False']]
         largest_effects = [self._create_largest_effects_name(x) for x in estimand_types]
         results = [self._create_result_name(x) for x in estimand_types]
-        input_names = [graph] + [edge_analysis] + heatmaps + validations + largest_effects + results
+        input_names = graphs + heatmaps + validations + largest_effects + results
         return output_name, input_names
+    
+    def create_knowledge_graph_name(self, file_extension='png'):
+        return self.create_output_name(file_extension, '_knowledge_graph')
 
     def _create_edge_analysis_name(self):
         return self.create_output_name('png', '_edge_analysis')
