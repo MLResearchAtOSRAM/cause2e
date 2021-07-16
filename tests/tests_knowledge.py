@@ -60,9 +60,14 @@ class TestKnowledgeChecker(unittest.TestCase):
                     frozenset({'B', 'C'}),
                     frozenset({'E'})
                     ]
-        knowledge_dict = {'required': required,
-                          'forbidden': forbidden,
-                          'temporal': temporal
+        edge_creator = EdgeCreator()
+        edge_creator.forbid_edges(forbidden)
+        edge_creator.require_edges(required)
+        edge_creator.forbid_edges_from_temporal(temporal)
+        print(edge_creator.forbidden_edges)
+        print(edge_creator.required_edges)
+        knowledge_dict = {'required': edge_creator.required_edges,
+                          'forbidden': edge_creator.forbidden_edges
                           }
         self.checker = KnowledgeChecker(edges, knowledge_dict)
 
