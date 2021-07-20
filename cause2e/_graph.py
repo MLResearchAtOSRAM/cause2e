@@ -240,32 +240,6 @@ class Graph:
         """
         self._edge_analyzer.save_edge_analysis(save_to_name)
 
-    def to_graph_databricks(self, name):
-        return GraphDatabricks(self._technical, name)
-        
-
-class GraphDatabricks(Graph):
-    """A subclass of Graph that enables showing the graph on Databricks."""
-
-    def __init__(self, intelligent_graph, name, from_tetrad=False):
-        """Inits GraphDatabricks from a cause2e._GraphNetworkx and a name string."""
-        super().__init__(intelligent_graph, from_tetrad)
-        self._name = name
-
-    def show(self):
-        """Prints an instruction for showing the graph on Databricks."""
-        self._save_intermediate()
-        command = 'displayHTML(learner.graph_databricks._src_str)'
-        print(f"Run {command} to show the graph.")
-
-    @property
-    def _src_str(self):
-        modified_name = self._name.replace('/dbfs/FileStore', 'files')
-        return f"<img src = '{modified_name}'>"
-
-    def _save_intermediate(self):
-        """Saves intermediate graph without enforcing acyclicity and domain knowledge."""
-        self.save(self._name, 'svg', strict=False)
         
 class GraphKnowledge(Graph):
     """A subclass of Graph that enables visualizing domain knowledge."""
@@ -305,7 +279,6 @@ class GraphKnowledge(Graph):
         if verbose:
             print(f'Saving knowledge graph to {file_extension} file.')
         self.dot.write(name, format=file_extension)
-    
 
 
 class _GraphNetworkx:

@@ -49,7 +49,7 @@ class Estimator():
         """Inits CausalEstimator"""
         self.paths = paths
         self.transformations = transformations.copy()
-        self.spark = spark
+        self._spark = spark
         self._quick_results_list = []
         self._validation_dict = validation_dict
 
@@ -62,20 +62,22 @@ class Estimator():
         if same_data:
             estim = cls(paths=learner.paths,
                         validation_dict=validation_dict,
-                        spark=learner.spark)
+                        spark=learner._spark,
+                        )
             estim.data = learner.data
             return estim
         else:
             return cls(paths=learner.paths,
                        transformations=learner.transformations,
                        validation_dict=validation_dict,
-                       spark=learner.spark)
+                       spark=learner._spark,
+                       )
 
 
     @property
     def _reader(self):
         return _reader.Reader(self.paths.full_data_name,
-                              self.spark
+                              self._spark
                               )
 
     def read_csv(self, **kwargs):
@@ -566,3 +568,56 @@ class Estimator():
                                                  self.outcome,
                                                  self.estimated_effect.value
                                                  )
+        
+
+class EstimatorDatabricks(Estimator):
+    """Main class for estimating causal effects on a Databricks cluster.
+
+    Attributes:
+        paths: A cause2e.PathManager managing paths and file names.
+        data: A pandas.Dataframe containing the data.
+        transformations: A list storing all the performed preprocessing transformations. Ensures
+            that the data fits the causal graph.
+        variables: A set containing the names of all variables in the data.
+        model: A dowhy.causal_model.CausalModel that can identify, estimate and refute causal
+            effects.
+        treatment: A string indicating the most recent treatment variable.
+        outcome: A string indicating the most recent outcome variable.
+        estimand_type: A string indicating the most recent type of causal effect.
+        estimand: A dowhy.causal_identifier.IdentifiedEstimand indicating the most recent estimand.
+        estimated_effect: A dowhy.causal_estimator.CausalEstimate indicating the most recent
+            estimated effect.
+        robustness_info: A dowhy.causal_refuter.CausalRefutation indicating the results of the most
+            recent robustness check.
+        spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
+            None.
+    """
+    
+    def __init__(self, paths, spark, transformations=[], validation_dict={}):
+        super().__init__(paths, transformations, validation_dict)
+        self._spark = spark
+        
+    def generate_pdf_report(self, dpi=(300, 300)):
+        """Generates a pdf report with the causal graph and all results.
+
+        Args:
+            dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
+        """
+        output_name, input_names = self.paths.create_reporting_paths()
+        self._report_name = output_name
+        self._print_result_display_instruction()
+        self._result_mgr.generate_pdf_report(output_name, input_names, dpi)
+    
+    @staticmethod
+    def _print_result_display_instruction():
+        """Prints an instruction for showing the pdf report on Databricks."""
+        command = f'displayHTML(<name of EstimatorDatabricks>.src_str_report)'
+        print(f"Run {command} to show the report.\n")
+        
+    @property
+    def src_str_report(self):
+        return self._get_src_str(self._report_name)
+    
+    def _get_src_str(self, name):
+        modified_name = name.replace('/dbfs/FileStore', 'files')
+        return f"<img src = '{modified_name}'>"
