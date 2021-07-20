@@ -27,6 +27,7 @@ setuptools.setup(
         "networkx",
         "numpy",
         "pandas",
+        "pillow",
         "pycausal",
         "pydot"
     ]

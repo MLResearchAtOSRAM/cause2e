@@ -30,25 +30,22 @@ class StructureLearner():
         knowledge: A dictionary containing domain knowledge about required or forbidden edges in
             the causal graph. Known quantitative effects can be included for later validation.
         graph: A cause2e.Graph representing the causal graph.
-        spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
-            None.
     """
 
     def __init__(self, paths, spark=None):
         """Inits StructureLearner."""
-
         self.paths = paths
         self.data = None
         self.continuous = set()
         self.discrete = set()
         self.knowledge = None
         self.graph = None
-        self.spark = spark
+        self._spark = spark
 
     @property
     def _reader(self):
         return _reader.Reader(self.paths.full_data_name,
-                              self.spark
+                              self._spark
                               )
 
     def read_csv(self, **kwargs):
@@ -167,7 +164,7 @@ class StructureLearner():
         print("====================")
         if self.knowledge:
             print("Showing knowledge for graph search.\n")
-            self._knowledge_graph.show()
+            self.knowledge_graph.show()
             print("Required edges:")
             for edge in self.knowledge['required']:
                 print(edge)
@@ -178,11 +175,11 @@ class StructureLearner():
         else:
             print("No knowledge has been provided.")
         print("====================")
-    
+
     @property
-    def _knowledge_graph(self):
+    def knowledge_graph(self):
         return _graph.GraphKnowledge(self.knowledge, self.variables)
-    
+
     def save_knowledge(self, file_extension='png', verbose=True):
         """Saves the knowledge graph to a file.
 
@@ -192,7 +189,7 @@ class StructureLearner():
                 Defaults to True.
         """
         name = self.paths.create_knowledge_graph_name(file_extension)
-        self._knowledge_graph.save(name, file_extension, verbose)
+        self.knowledge_graph.save(name, file_extension, verbose)
 
     def erase_knowledge(self):
         """Erases all domain knowledge."""
@@ -297,9 +294,6 @@ class StructureLearner():
         self._searcher = self._plain_searcher
         self._searcher.run_search(algo, use_knowledge, verbose, keep_vm, **kwargs)
         self.graph = self._searcher.graph_output
-        self.graph_databricks = self.graph.to_graph_databricks(self.paths.svg_name)
-        # self.scores = self._searcher.scores not available yet
-        # better use searchers method to access scores and pretty print etc.
         if show_graph:
             self.display_graph()
         if save_graph:
@@ -509,8 +503,7 @@ class StructureLearner():
             generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
                 validations and estimates should be written to files and combined into a pdf.
         """
-        self._estimator = estimator.Estimator.from_learner(self)
-        self._estimator.data = self.data
+        self._create_estimator()
         self._estimator.run_all_quick_analyses(estimand_types,
                                                verbose,
                                                show_tables,
@@ -519,3 +512,93 @@ class StructureLearner():
                                                show_largest_effects,
                                                generate_pdf_report,
                                                )
+        
+    def _create_estimator(self):
+        self._estimator = estimator.Estimator.from_learner(self, same_data=True)
+
+
+class StructureLearnerDatabricks(StructureLearner):
+    """Main class for performing causal discovery on a Databricks cluster.
+
+    Attributes:
+        paths: A cause2e.PathManager managing paths and file names.
+        data: A pandas.Dataframe containing the data.
+        transformations: A list storing all the performed preprocessing transformations.
+        variables: A set containing the names of all variables in the data.
+        continuous: A set containing the names of all continuous variables in the data.
+        discrete: A set containing the names of all discrete variables in the data.
+        knowledge: A dictionary containing domain knowledge about required or forbidden edges in
+            the causal graph. Known quantitative effects can be included for later validation.
+        graph: A cause2e.Graph representing the causal graph.
+        src_str_knowledge_graph: A string that is used to show the passed domain knowledge.
+        src_str_graph: A string that is used to show the result of the graph search.
+    """
+    
+    def __init__(self, paths, spark):
+        super().__init__(paths)
+        self._spark = spark
+
+    def show_knowledge(self):
+        """Shows all domain knowledge that is used for causal discovery."""
+        print("====================")
+        if self.knowledge:
+            print("Showing knowledge for graph search.\n")
+            self.knowledge_graph.show()
+            self._print_knowledge_display_instruction()
+            print("Required edges:")
+            for edge in self.knowledge['required']:
+                print(edge)
+            print("--------------------")
+            print("Forbidden edges:")
+            for edge in self.knowledge['forbidden']:
+                print(edge)
+        else:
+            print("No knowledge has been provided.")
+        print("====================")
+    
+    @staticmethod
+    def _print_knowledge_display_instruction():
+        """Prints an instruction for showing the knowledge on Databricks."""
+        command = f'displayHTML(<name of StructureLearnerDatabricks>.src_str_knowledge_graph)'
+        print(f"Run {command} to show the knowledge graph.")
+        print("Save the knowledge and retry if no file is found.\n")
+
+    @property
+    def src_str_knowledge_graph(self):
+        name = self.paths.create_knowledge_graph_name('png')
+        return self._get_src_str(name)
+    
+    def _get_src_str(self, name):
+        """Returns a path in the right format for 'display' on Databricks.
+        
+        Args:
+            name: The absolute path to a file in the filestore.
+        """
+        modified_name = name.replace('/dbfs/FileStore', 'files')
+        return f"<img src = '{modified_name}'>"
+    
+    def display_graph(self, edge_analysis=True):
+        """Shows the causal graph.
+        
+        Args:
+            edge_analysis: Optional; A boolean indicating if an analysis about the influence of
+                domain knowledge on the resulting graph should be shown.
+        """
+        self.graph.show()
+        self._print_graph_display_instruction()
+        self.print_edge_analysis()
+    
+    @staticmethod
+    def _print_graph_display_instruction():
+        """Prints an instruction for showing the causal graph on Databricks."""
+        command = f'displayHTML(<name of StructureLearnerDatabricks>.src_str_graph)'
+        print(f"Run {command} to show the graph.")
+        print("Save the graph with strict=False and retry if no file is found.\n")
+    
+    @property
+    def src_str_graph(self):
+        name = self._get_graph_name('png')
+        return self._get_src_str(name)
+    
+    def _create_estimator(self):
+        self._estimator = estimator.EstimatorDatabricks.from_learner(self, same_data=True)

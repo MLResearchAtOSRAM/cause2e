@@ -13,7 +13,7 @@ import pandas as pd
 from math import isnan
 import seaborn as sns
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw
+import PIL
 
 
 class ResultManager:
@@ -630,7 +630,12 @@ def _convert_rgba_to_rgb(filename):
     Args:
         filename: A string indicating the name of the png file.
     """
-    rgba = Image.open(filename)
-    rgb = Image.new('RGB', rgba.size, (255, 255, 255))  # white background
-    rgb.paste(rgba, mask=rgba.split()[3])
+    rgba = PIL.Image.open(filename)
+    rgb = PIL.Image.new('RGB', rgba.size, (255, 255, 255))  # white background
+    if rgba.mode == 'RGBA':
+        rgb.paste(rgba, mask=rgba.split()[3])
+    elif rgba.mode == 'RGB':
+        rgb.paste(rgba)
+    else:
+        print("Unknown image type (not rgb or rgba)!\n")
     return rgb
