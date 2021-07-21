@@ -1,0 +1,21 @@
+{
+    "jupyter.jupyterServerType": "local",
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "test*.py"
+    ],
+    "python.linting.flake8Args": [
+        "--max-line-length=120",
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.unittestEnabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "python.pythonPath": "C:\\Users\\D.Gruenbaum\\Anaconda3\\envs\\test\\python.exe",
+    "files.trimTrailingWhitespace": true
+}
