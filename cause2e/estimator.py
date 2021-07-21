@@ -73,7 +73,6 @@ class Estimator():
                        spark=learner._spark,
                        )
 
-
     @property
     def _reader(self):
         return _reader.Reader(self.paths.full_data_name,
@@ -94,14 +93,14 @@ class Estimator():
 
     def imitate_data_trafos(self, vals_list=None):
         """Imitates all the preprocessing steps applied before causal discovery.
-        
+
         Args:
             vals_list: A list containing one column of values for each 'add_variable' step in the
                 transformations. Defaults to None.
         """
         self._ensure_preprocessor()
         self._preprocessor.apply_stored_transformations(self.transformations, vals_list)
-        
+
     def combine_variables(self, name, input_cols, func, keep_old=True):
         """Combines data from existing variables into a new variable.
 
@@ -284,7 +283,7 @@ class Estimator():
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
         """
-        #TODO: fix error when input is categorical (e.g. string-type season in sprinkler data)
+        # TODO: fix error when input is categorical (e.g. string-type season in sprinkler data)
         self.initialize_model(treatment, outcome, estimand_type)
         self.identify_estimand(verbose, proceed_when_unidentifiable=True)
         if estimand_type == 'nonparametric-ate':
@@ -309,7 +308,7 @@ class Estimator():
         effect = (treatment, outcome, estimand_type)
         if effect in self._validation_dict:
             self._validate_effect(effect)
-            
+
     def initialize_model(self, treatment, outcome, estimand_type, **kwargs):
         """Initializes the causal model.
 
@@ -386,10 +385,10 @@ class Estimator():
                                                           )
         if verbose:
             print(self.robustness_info)
-            
-    def _validate_effect(self, effect):#should this go into a new class?
+
+    def _validate_effect(self, effect):  # TODO: should this go into a new class?
         """Checks if an estimated effect matches previous expectations.
-        
+
         Args:
             effect: A triple of treatment, outcome and estimand type.
         """
@@ -398,10 +397,10 @@ class Estimator():
         estimated = val['Estimated']
         expected = val['Expected']
         val['Valid'] = self._compare_estimated_to_expected_effect(estimated, expected)
-        
+
     def _add_estimated_effect(self, effect):
         """Looks up the value of an estimated effect for validation.
-        
+
         Args:
             effect: A triple of treatment, outcome and estimand type.
         """
@@ -435,7 +434,6 @@ class Estimator():
             return lower_bound < estimated < upper_bound
         else:
             raise AssertionError
-
 
     def _store_results(self, robustness_method):
         """Stores the results of an anlysis for later inspection.
@@ -512,7 +510,7 @@ class Estimator():
             estimand_type: A string indicating the type of causal effect.
         """
         self._result_mgr.show_quick_result_methods(treatment, outcome, estimand_type)
-        
+
     def show_largest_effects(self, estimand_type, n_results=10, save=True):
         """Shows the largest causal effects in decreasing order.
 
@@ -528,10 +526,10 @@ class Estimator():
             self._result_mgr.show_largest_effects(estimand_type, n_results, name)
         else:
             self._result_mgr.show_largest_effects(estimand_type, n_results)
-        
+
     def show_validation(self, save=True):
         """Shows if selected estimated effects match previous expectations.
-        
+
         Args:
             save: Optional; A boolean indicating if the result should be saved to png.
                 Defaults to True.
@@ -568,7 +566,7 @@ class Estimator():
                                                  self.outcome,
                                                  self.estimated_effect.value
                                                  )
-        
+
 
 class EstimatorDatabricks(Estimator):
     """Main class for estimating causal effects on a Databricks cluster.
@@ -592,11 +590,11 @@ class EstimatorDatabricks(Estimator):
         spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
             None.
     """
-    
+
     def __init__(self, paths, spark, transformations=[], validation_dict={}):
         super().__init__(paths, transformations, validation_dict)
         self._spark = spark
-        
+
     def generate_pdf_report(self, dpi=(300, 300)):
         """Generates a pdf report with the causal graph and all results.
 
@@ -607,17 +605,17 @@ class EstimatorDatabricks(Estimator):
         self._report_name = output_name
         self._print_result_display_instruction()
         self._result_mgr.generate_pdf_report(output_name, input_names, dpi)
-    
+
     @staticmethod
     def _print_result_display_instruction():
         """Prints an instruction for showing the pdf report on Databricks."""
-        command = f'displayHTML(<name of EstimatorDatabricks>.src_str_report)'
+        command = 'displayHTML(<name of EstimatorDatabricks>.src_str_report)'
         print(f"Run {command} to show the report.\n")
-        
+
     @property
     def src_str_report(self):
         return self._get_src_str(self._report_name)
-    
+
     def _get_src_str(self, name):
         modified_name = name.replace('/dbfs/FileStore', 'files')
         return f"<img src = '{modified_name}'>"

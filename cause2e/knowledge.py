@@ -22,19 +22,19 @@ class EdgeCreator:
         """Inits EdgeCreator."""
         self.forbidden_edges = set()
         self.required_edges = set()
-        
+
     def forbid_edges(self, edges):
         """Forbids multiple edges.
-        
+
         Args:
             edges: A set of edges.
         """
         for edge in edges:
             self.forbid_edge(*edge)
-        
+
     def forbid_edge(self, source, destination):
         """Forbids an edge between two nodes.
-        
+
         Args:
             source: A string indicating the source node of the forbidden edge.
             destination: A string indicating the destination node of the forbidden edge.
@@ -44,7 +44,7 @@ class EdgeCreator:
     def forbid_edges_from_temporal(self, temporal_order):
         """Finds all pairs of variables such that the first variable cannot causally affect the second
         variable for temporal reasons.
-        
+
         Args:
             temporal_order: A list of variable sets indicating the temporal order in which the
                 variables were generated. This is used to infer forbidden edges since the future
@@ -58,7 +58,7 @@ class EdgeCreator:
         Returns all pairs of sets such that variables in
         the first set cannot causally affect variables in the
         second set.
-        
+
         Args:
             temporal_order: A list of variable sets indicating the temporal order in which the
                 variables were generated. This is used to infer forbidden edges since the future
@@ -97,19 +97,19 @@ class EdgeCreator:
         """
         edges = self._create_edges_from_groups(group, incoming, outgoing, exceptions)
         self.forbidden_edges |= edges
-    
+
     def require_edges(self, edges):
         """Requires multiple edges.
-        
+
         Args:
             edges: A set of edges.
         """
         for edge in edges:
             self.require_edge(*edge)
-    
+
     def require_edge(self, source, destination):
         """Requires an edge between two nodes.
-        
+
         Args:
             source: A string indicating the source node of the required edge.
             destination: A string indicating the destination node of the required edge.
@@ -135,13 +135,13 @@ class EdgeCreator:
         """
         edges = self._create_edges_from_groups(group, incoming, outgoing, exceptions)
         self.required_edges |= edges
-        
+
     def _create_edges_from_groups(self,
-                                 group,
-                                 incoming=set(),
-                                 outgoing=set(),
-                                 exceptions=set()
-                                 ):
+                                  group,
+                                  incoming=set(),
+                                  outgoing=set(),
+                                  exceptions=set()
+                                  ):
         """Creates edges between groups of variables.
 
         Args:
@@ -150,7 +150,7 @@ class EdgeCreator:
                 in 'group'. Defaults to None.
             outgoing: Optional; a set containing all variables that must (not) be affected by
                 variables in 'group'. Defaults to None.
-            exceptions: Optional; a set of edges that should not be required/forbidden even if 
+            exceptions: Optional; a set of edges that should not be required/forbidden even if
                 the group structure entails it. Defaults to None.
         """
         edges = self._create_incoming_edges(group, incoming)
@@ -163,12 +163,12 @@ class EdgeCreator:
 
     def _create_outgoing_edges(self, group, outgoing):
         return _set_product(group, outgoing)
-    
+
     def forget_edges(self):
         """Forgets all the previously created edges to allow a new start."""
         self.forbidden_edges = set()
         self.required_edges = set()
-        
+
     def show_edges(self):
         """Shows all currently required/forbidden edges."""
         print("-------------------")

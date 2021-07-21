@@ -18,6 +18,7 @@ import pandas as pd
 from cause2e import knowledge
 from cause2e._result_mgr import save_df_as_png
 
+
 # TODO split this into several files
 class Graph:
     """Top level graph class.
@@ -36,18 +37,18 @@ class Graph:
         """Inits Graph from a cause2e._GraphNetworkx."""
         self._technical = intelligent_graph
         self._knowledge = _format_knowledge(knowledge)
-            
+
     @classmethod
     def from_tetrad(cls, tetrad_graph, knowledge=None):
         """Inits Graph directly from a TETRAD graph."""
         return cls(_GraphTetrad(tetrad_graph).to_GraphNetworkx(), knowledge)
-            
+
     @classmethod
     def from_edges(cls, directed_edges, undirected_edges, knowledge=None):
         """Inits Graph directly from given edges."""
         intelligent_graph = _GraphNetworkx.from_edges(directed_edges, undirected_edges)
         return cls(intelligent_graph, knowledge)
-            
+
     @property
     def directed_edges(self):
         return self._technical.directed_edges
@@ -55,11 +56,11 @@ class Graph:
     @property
     def undirected_edges(self):
         return self._technical.undirected_edges
-    
+
     @property
     def edges(self):
         return self._technical.edges
-    
+
     @property
     def nodes(self):
         return self._technical.nodes
@@ -186,7 +187,7 @@ class Graph:
     @property
     def png(self):
         return self.dot.create_png(prog='dot')
-    
+
     @property
     def _png_display(self):
         dot = self.dot
@@ -216,7 +217,7 @@ class Graph:
             msg = 'Your graph is not a DAG or not compliant with the specified knowledge.'
             assert self._final_checks(knowledge), msg
         self.dot.write(name, format=file_extension)
-        
+
     def print_edge_analysis(self, save_to_name=None):
         """Analyzes which part of the edges were forced by domain knowledge.
 
@@ -240,7 +241,7 @@ class Graph:
         """
         self._edge_analyzer.save_edge_analysis(save_to_name)
 
-        
+
 class GraphKnowledge(Graph):
     """A subclass of Graph that enables visualizing domain knowledge."""
 
@@ -251,22 +252,22 @@ class GraphKnowledge(Graph):
         super().__init__(intelligent_graph, knowledge_)
         self._variables = variables
         self._allowed_edges = self._edge_analyzer.get_remaining_allowed_edges()
-        
+
     @property
     def dot(self):
         return self._technical.to_dot(self._knowledge['required'], self._allowed_edges)
-    
+
     @property
     def _edge_analyzer(self):
         return _EdgeAnalyzer(self.nodes, self.directed_edges, self.undirected_edges,
                              self._knowledge, self._variables)
-        
+
     def show(self):
         "Shows the graph."
         print('Causal graph constructed from domain knowledge:')
         print('(Edges required by domain knowledge in red, remaining allowed edges dotted)\n')
         display(Image(self._png_display))
-        
+
     def save(self, name, file_extension, verbose=True):
         """Saves the knowledge graph to a file.
 
@@ -296,7 +297,7 @@ class _GraphNetworkx:
         """Inits _GraphNetworkx from a networkx digraph and a set of undirected edges."""
         self._graph = graph_nx
         self.undirected_edges = undirected_edges
-        
+
     @classmethod
     def from_edges(self, directed_edges, undirected_edges=set()):
         """Inits _GraphNetworkx from a sets of directed and undirected edges."""
@@ -325,7 +326,7 @@ class _GraphNetworkx:
 
     def to_dot(self, required_edges=set(), allowed_edges=set()):
         """Returns a pydot dot graph representation of the graph.
-        
+
         Args:
             required_edges: Optional; A set of edges required by domain knowledge.
                 Defaults to set().
@@ -339,7 +340,7 @@ class _GraphNetworkx:
             self._add_allowed_edges_to_dot(dot, allowed_edges)
         dot.set_size('"25,20!"')
         return dot
-    
+
     def _add_directed_edges_to_dot(self, dot, required_edges=set()):
         """Adds directed edges to a directed dot graph.
 
@@ -355,7 +356,7 @@ class _GraphNetworkx:
             color = self._get_edge_color(edge, required_edges)
             dot.add_edge(pydot.Edge(*edge, color=color))
         return dot
-    
+
     def _get_edge_color(self, edge, required_edges):
         """Returns the color of an edge.
 
@@ -389,7 +390,7 @@ class _GraphNetworkx:
                                     )
                          )
         return dot
-    
+
     def _add_allowed_edges_to_dot(self, dot, allowed_edges):
         """Adds remaining allowed edges to a directed dot graph.
 
@@ -619,11 +620,11 @@ class _EdgeAnalyzer:
         self._undirected_edges = undirected_edges
         self._knowledge = knowledge
         self._additional_nodes = additional_nodes
-        
+
     def print_edge_analysis(self, save_to_name=None):
         """Analyzes which part of the edges were forced by domain knowledge.
-        
-        Args: 
+
+        Args:
             save_to_name: Optional; A string indicating the beginning of the name of the png file
                 where the edge information should be saved. Defaults to None.
         """
@@ -638,7 +639,7 @@ class _EdgeAnalyzer:
         print("================================")
         if save_to_name:
             self.save_edge_analysis(save_to_name)
-            
+
     def _print_undirected_edges(self):
         """Prints a list of all undirected edges in the graph."""
         if self._undirected_edges:
@@ -656,7 +657,7 @@ class _EdgeAnalyzer:
         print("The following present edges were forced by domain knowledge:")
         for edge in self._get_forced_edges():
             print(edge)
-            
+
     def _print_unforced_edges(self):
         print("The following present edges were not forced by domain knowledge:")
         for edge in self._get_unforced_edges():
@@ -664,25 +665,25 @@ class _EdgeAnalyzer:
 
     def _get_forced_edges(self):
         return {edge for edge in self._directed_edges.intersection(self._knowledge['required'])}
-    
+
     def _get_unforced_edges(self):
         forced_edges = self._get_forced_edges()
         return self._directed_edges - forced_edges
-    
+
     def _print_remaining_allowed_edges(self):
         print("The following missing edges were not forbidden by domain knowledge:")
         for edge in self.get_remaining_allowed_edges():
             print(edge)
-    
+
     def get_remaining_allowed_edges(self):
         """Returns the set of absent edges that are not forbidden by domain knowledge."""
         allowed_edges = self._get_allowed_edges()
         return allowed_edges - self._directed_edges
-    
+
     def _get_allowed_edges(self):
         possible_edges = self._get_all_possible_edges()
         return possible_edges - self._knowledge['forbidden']
-    
+
     def _get_all_possible_edges(self):
         possible_edges = set()
         nodes = self._nodes | self._additional_nodes
@@ -693,8 +694,8 @@ class _EdgeAnalyzer:
 
     def save_edge_analysis(self, save_to_name):
         """Analyzes which part of the edges were forced by domain knowledge.
-        
-        Args: 
+
+        Args:
             save_to_name: A string indicating the beginning of the name of the png file
                 where the edge information should be saved.
         """

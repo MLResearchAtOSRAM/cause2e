@@ -1,7 +1,6 @@
 import unittest
-from cause2e import _graph, path_mgr, discovery
+from cause2e import _graph
 import networkx as nx
-import os
 
 
 class TestGraphToplevel(unittest.TestCase):
@@ -144,6 +143,7 @@ class TestGraphNetworkx(unittest.TestCase):
         undirected_edges = {frozenset({'B', 'D'})}
         directed_edges = {('A', 'B'), ('A', 'C'), ('C', 'D'), ('D', 'E')}
         self.check_all_edges(undirected_edges, directed_edges)
+
 
 if __name__ == '__main__':
     unittest.main()

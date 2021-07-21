@@ -54,7 +54,7 @@ class TestPreprocessor(unittest.TestCase):
         self.pproc.add_variable(name, vals)
         self.assertTrue(name in data)
         self.assertTrue(data[name].equals(vals))
-        
+
     def test_rename_variable(self):
         data = self.pproc.data
         current_name = 'W0'
@@ -64,6 +64,7 @@ class TestPreprocessor(unittest.TestCase):
         self.pproc.rename_variable('W0', 'W0_new')
         self.assertFalse(current_name in data)
         self.assertTrue(new_name in data)
+
 
 class TestImitatePreprocessor(unittest.TestCase):
     def setUp(self):
@@ -105,7 +106,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         self.pproc_2._apply_stored_transformation(trafo, vals)
         self.assertTrue(name in data)
         self.assertTrue(data[name].equals(vals))
-        
+
     def test_apply_stored_renaming(self):
         data = self.pproc_2.data
         current_name = 'W0'
@@ -160,7 +161,7 @@ class TestImitatePreprocessor(unittest.TestCase):
         self.pproc_2._apply_stored_transformation(trafo, vals)
         self.assertTrue('DoubleW0' in data_2)
         self.assertTrue(data_1.equals(data_2))
-        
+
     def test_imitate_renaming(self):
         data_1 = self.pproc_1.data
         data_2 = self.pproc_2.data

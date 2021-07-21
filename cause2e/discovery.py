@@ -137,7 +137,7 @@ class StructureLearner():
             edge_creator: A cause2e.knowledge.EdgeCreator that has been used to create
                 required and forbidden edges.
             validation_creator: Optional; A cause2e.knowledge.ValidationCreator that has been used
-                to create a dictionary containing expected quantitative causal effects. These are 
+                to create a dictionary containing expected quantitative causal effects. These are
                 evaluated after estimation of the effects. Defaults to None.
             show: Optional; A boolean indicating if information about the passed knowledge should
                 be displayed. Defaults to True.
@@ -158,7 +158,7 @@ class StructureLearner():
             self.show_knowledge()
         if save:
             self.save_knowledge()
-        
+
     def show_knowledge(self):
         """Shows all domain knowledge that is used for causal discovery."""
         print("====================")
@@ -301,14 +301,14 @@ class StructureLearner():
 
     def display_graph(self, edge_analysis=True):
         """Shows the causal graph.
-        
+
         Args:
             edge_analysis: Optional; A boolean indicating if an analysis about the influence of
                 domain knowledge on the resulting graph should be shown.
         """
         self.graph.show()
         self.print_edge_analysis()
-    
+
     def print_edge_analysis(self):
         """Analyzes which part of the edges were forced by domain knowledge."""
         self.graph.print_edge_analysis()
@@ -416,7 +416,7 @@ class StructureLearner():
 
         This means that it contains all the edges that were required in the domain knowledge
         and none of the edges that were forbidden in the domain knowledge.
-        
+
         Returns:
             A boolean that is True if and only if the graph respects the domain knowledge.
         """
@@ -471,7 +471,7 @@ class StructureLearner():
         if self.knowledge is None:
             additions += '_no_knowledge'
         return additions
-    
+
     def _get_analysis_name(self, graph_name):
         return graph_name[:-4] + '_edge_analysis.png'
 
@@ -512,7 +512,7 @@ class StructureLearner():
                                                show_largest_effects,
                                                generate_pdf_report,
                                                )
-        
+
     def _create_estimator(self):
         self._estimator = estimator.Estimator.from_learner(self, same_data=True)
 
@@ -533,7 +533,7 @@ class StructureLearnerDatabricks(StructureLearner):
         src_str_knowledge_graph: A string that is used to show the passed domain knowledge.
         src_str_graph: A string that is used to show the result of the graph search.
     """
-    
+
     def __init__(self, paths, spark):
         super().__init__(paths)
         self._spark = spark
@@ -555,11 +555,11 @@ class StructureLearnerDatabricks(StructureLearner):
         else:
             print("No knowledge has been provided.")
         print("====================")
-    
+
     @staticmethod
     def _print_knowledge_display_instruction():
         """Prints an instruction for showing the knowledge on Databricks."""
-        command = f'displayHTML(<name of StructureLearnerDatabricks>.src_str_knowledge_graph)'
+        command = 'displayHTML(<name of StructureLearnerDatabricks>.src_str_knowledge_graph)'
         print(f"Run {command} to show the knowledge graph.")
         print("Save the knowledge and retry if no file is found.\n")
 
@@ -567,19 +567,19 @@ class StructureLearnerDatabricks(StructureLearner):
     def src_str_knowledge_graph(self):
         name = self.paths.create_knowledge_graph_name('png')
         return self._get_src_str(name)
-    
+
     def _get_src_str(self, name):
         """Returns a path in the right format for 'display' on Databricks.
-        
+
         Args:
             name: The absolute path to a file in the filestore.
         """
         modified_name = name.replace('/dbfs/FileStore', 'files')
         return f"<img src = '{modified_name}'>"
-    
+
     def display_graph(self, edge_analysis=True):
         """Shows the causal graph.
-        
+
         Args:
             edge_analysis: Optional; A boolean indicating if an analysis about the influence of
                 domain knowledge on the resulting graph should be shown.
@@ -587,18 +587,18 @@ class StructureLearnerDatabricks(StructureLearner):
         self.graph.show()
         self._print_graph_display_instruction()
         self.print_edge_analysis()
-    
+
     @staticmethod
     def _print_graph_display_instruction():
         """Prints an instruction for showing the causal graph on Databricks."""
-        command = f'displayHTML(<name of StructureLearnerDatabricks>.src_str_graph)'
+        command = 'displayHTML(<name of StructureLearnerDatabricks>.src_str_graph)'
         print(f"Run {command} to show the graph.")
         print("Save the graph with strict=False and retry if no file is found.\n")
-    
+
     @property
     def src_str_graph(self):
         name = self._get_graph_name('png')
         return self._get_src_str(name)
-    
+
     def _create_estimator(self):
         self._estimator = estimator.EstimatorDatabricks.from_learner(self, same_data=True)

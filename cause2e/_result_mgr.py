@@ -3,7 +3,7 @@ _result_mgr.py
 ================================================================
 This module implements the ResultManager class.
 
-It is used as a helper class for managing the output of analyses after the estimation of causal 
+It is used as a helper class for managing the output of analyses after the estimation of causal
 effects has been performed. It derives heatmaps, tables, selected validations and a pdf report
 from the results. It makes use of several helper classes itself.
 """
@@ -24,11 +24,11 @@ class ResultManager:
         self._query_mgr = _QueryManager(self._numeric_result_mgr)
         self._heatmap_mgr = _HeatmapManager(self._numeric_result_mgr)
         self._validation_mgr = _ValidationManager(validation_dict)
-    
+
     def show_quick_results(self, save_to_name=None):
         """Shows all results from quick analyses in tabular form."""
         self._numeric_result_mgr.show_quick_results(save_to_name)
-        
+
     def get_quick_result_estimate(self, treatment, outcome, estimand_type):
         """Returns a stored estimated effect.
 
@@ -36,13 +36,13 @@ class ResultManager:
             treatment: A string indicating the name of the treatment variable.
             outcome: A string indicating the name of the outcome variable.
             estimand_type: A string indicating the type of causal effect.
-            
+
         Raises:
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
         """
         return self._query_mgr.get_result_estimate(treatment, outcome, estimand_type)
-    
+
     def show_quick_result_methods(self, treatment, outcome, estimand_type):
         """Shows methodic information about the result of a quick analysis.
 
@@ -52,7 +52,7 @@ class ResultManager:
             estimand_type: A string indicating the type of causal effect.
         """
         self._query_mgr.show_result_methods(treatment, outcome, estimand_type)
-        
+
     def show_largest_effects(self, estimand_type, n_results, save_to_name=None):
         """Shows the largest causal effects in decreasing order.
 
@@ -72,16 +72,16 @@ class ResultManager:
                 where the heatmaps and dataframes should be saved. Defaults to None.
         """
         self._heatmap_mgr.show_heatmaps(save_to_name)
-    
+
     def show_validation(self, save_to_name=None):
         """Shows if selected estimated effects match previous expectations.
-        
+
         Args:
             save_to_name: Optional; A string indicating the beginning of the name of the png file
                 where the validation report should be saved. Defaults to None.
         """
         self._validation_mgr.show_validation(save_to_name)
-        
+
     def generate_pdf_report(self, output_name, input_names, dpi=(300, 300)):
         """Generates a pdf report with the causal graph and all results.
 
@@ -95,21 +95,21 @@ class ResultManager:
 
 class _NumericResultManager:
     """Helper class for dealing with numeric result tables.
-    
+
     Attributes:
         quick_results: A pandas DataFrame containing all stored results and methods from quick analyses.
         quick_results_ate: A pandas DataFrame containing all quantitative average treatment effects.
         quick_results_nde: A pandas DataFrame containing all quantitative natural direct effects.
         quick_results_nie: A pandas DataFrame containing all quantitative natural indirect effects.
     """
-    
+
     def __init__(self, quick_results_list):
         self._quick_results_list = quick_results_list
         self.quick_results = self._get_quick_results()
         self.quick_results_ate = self._get_quick_results_ate()
         self.quick_results_nde = self._get_quick_results_nde()
         self.quick_results_nie = self._get_quick_results_nie()
-        
+
     def _get_quick_results(self):
         return pd.DataFrame(self._quick_results_list,
                             columns=['Treatment',
@@ -128,12 +128,12 @@ class _NumericResultManager:
     def _get_quick_results_nde(self):
         pivot_df = self._get_pivot_df_from_quick_results(estimand_type='nonparametric-nde')
         return pivot_df.fillna(self.quick_results_ate)  # no mediation -> ate equals direct effect
-        #TODO: fix error when printing results of mediation analysis from stored results
+        # TODO: fix error when printing results of mediation analysis from stored results
 
     def _get_quick_results_nie(self):
         pivot_df = self._get_pivot_df_from_quick_results(estimand_type='nonparametric-nie')
         return pivot_df.fillna(0)  # no mediation -> no indirect effect
-    
+
     def show_quick_results(self, save_to_name=None):
         """Shows all results from quick analyses in tabular form."""
         print("Only quantitative estimates are shown. For methodic details, use "
@@ -177,13 +177,13 @@ class _NumericResultManager:
 
 class _QueryManager:
     """Helper class for querying the stored results."""
-    
+
     def __init__(self, numeric_results_mgr):
         self._results_df = numeric_results_mgr.quick_results
         self._results_ate = numeric_results_mgr.quick_results_ate
         self._results_nde = numeric_results_mgr.quick_results_nde
         self._results_nie = numeric_results_mgr.quick_results_nie
-    
+
     def show_result_methods(self, treatment, outcome, estimand_type):
         """Shows methodic information about the result of a quick analysis.
 
@@ -231,7 +231,7 @@ class _QueryManager:
             treatment: A string indicating the name of the treatment variable.
             outcome: A string indicating the name of the outcome variable.
             estimand_type: A string indicating the type of causal effect.
-            
+
         Raises:
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
@@ -246,7 +246,7 @@ class _QueryManager:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
         return df.loc[treatment]['Estimated_effect'][outcome]
-    
+
     def show_largest_effects(self, estimand_type, n_results, save_to_name=None):
         """Shows the largest causal effects in decreasing order.
 
@@ -263,7 +263,7 @@ class _QueryManager:
         print("\n================================\n")
         if save_to_name:
             self._save_largest_effects_as_png(largest_effects, title, estimand_type, save_to_name)
-        
+
     def _get_largest_effects(self, estimand_type, n_results):
         """Returns the largest causal effects in decreasing order.
 
@@ -282,10 +282,10 @@ class _QueryManager:
         df = self._results_df.copy()
         df['Estimated_effect'] = df.apply(lambda x: self._replace_nans(x), axis=1)
         return df
-        
+
     def _replace_nans(self, row):
         """Returns the correct effect strengths for mediation when there are only direct effects.
-        
+
         Args:
             row: A row of the Pandas DataFrame where all results are stored.
         """
@@ -293,7 +293,7 @@ class _QueryManager:
             return self.get_result_estimate(row['Treatment'], row['Outcome'], row['Estimand_type'])
         else:
             return row['Estimated_effect']
-        
+
     def _get_matching_nontrivial_estimates(self, df, estimand_type):
         """Returns a dataframe containing only nontrivial causal estimates of a given effect type.
 
@@ -303,7 +303,7 @@ class _QueryManager:
         """
         mask = (df['Treatment'] != df['Outcome']) & (df['Estimand_type'] == estimand_type)
         return df[mask]
-    
+
     def _save_largest_effects_as_png(self, df, title, estimand_type, save_to_name):
         """Saves the largest causal effects of a given type to a png file.
 
@@ -317,14 +317,15 @@ class _QueryManager:
         filename = save_to_name + '_largest_effects_' + estimand_type[-3:] + '.png'
         save_df_as_png(df, title, filename, col_labels=df.columns)
 
+
 class _HeatmapManager:
     """Helper class for generating and saving heatmaps."""
-    
+
     def __init__(self, numeric_results_mgr):
         self._results_ate = numeric_results_mgr.quick_results_ate
         self._results_nde = numeric_results_mgr.quick_results_nde
         self._results_nie = numeric_results_mgr.quick_results_nie
-        
+
     def show_heatmaps(self, save_to_name=None):
         """Shows and possibly saves heatmaps and dataframes of the causal effect strengths.
 
@@ -376,7 +377,7 @@ class _HeatmapManager:
         row_labels = df.index
         filename = save_to_name + '_results_' + estimand_type[-3:] + '.png'
         save_df_as_png(df, title, filename, col_labels, row_labels)
-        
+
     def _select_heatmap_input(self, estimand_type):
         """Returns the right dataframe and title for creating a heatmap.
 
@@ -386,13 +387,13 @@ class _HeatmapManager:
         df = self._select_results_df(estimand_type)
         title = self._select_title(estimand_type)
         return df, title
-    
+
     def _select_results_df(self, estimand_type):
         """Returns the right stored results.
 
         Args:
             estimand_type: A string indicating the type of causal effect.
-            
+
         Raises:
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
@@ -407,13 +408,13 @@ class _HeatmapManager:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
 
-    @staticmethod    
+    @staticmethod
     def _select_title(estimand_type):
         """Returns the right title for displaying results.
 
         Args:
             estimand_type: A string indicating the type of causal effect.
-            
+
         Raises:
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
@@ -428,16 +429,16 @@ class _HeatmapManager:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
 
-    
+
 class _ValidationManager:
     """Helper class for validating expected causal effects."""
-    
+
     def __init__(self, validation_dict):
         self._validation_dict = validation_dict
-    
+
     def show_validation(self, save_to_name=None):
         """Shows if selected estimated effects match previous expectations.
-        
+
         Args:
             save_to_name: Optional; A string indicating the beginning of the name of the png file
                 where the validation report should be saved. Defaults to None.
@@ -455,7 +456,7 @@ class _ValidationManager:
         print("================================")
         if save_to_name:
             self._save_validations_as_png(result_str, save_to_name)
-        
+
     def _generate_validation_strings(self, effect_names, description):
         """Returns a subset of validation results in pretty string format.
 
@@ -469,19 +470,21 @@ class _ValidationManager:
         for effect in effect_names:
             result_str += self._generate_single_validation_str(effect)
         return result_str
-    
+
     def _generate_single_validation_str(self, effect):
         """Returns a single validation result in pretty string format.
 
         Args:
             effect: A triple indicating treatment, outcome and effect type.
         """
-        entry = self._validation_dict[effect] 
+        entry = self._validation_dict[effect]
         expected_str = self._get_expected_str(entry['Expected'])
         estimated_str = "{:.2f}".format(entry['Estimated'])
         valid_str = entry['Valid']
-        return f"Estimated {effect[2][-3:]} of {effect[0]} on {effect[1]}: {estimated_str} (expected: {expected_str}) -> {valid_str} \n"
-    
+        estimated = f"Estimated {effect[2][-3:]} of {effect[0]} on {effect[1]}: {estimated_str} "
+        expected = f"(expected: {expected_str}) -> {valid_str} \n"
+        return estimated + expected
+
     def _get_expected_str(self, expectation):
         """Returns an expected effect in pretty string form.
 
@@ -496,7 +499,7 @@ class _ValidationManager:
                 return f"{type_} than {expectation[1]}"
         elif type_ == 'between':
             return f"between {expectation[1]} and {expectation[2]}"
-        
+
     def _save_validations_as_png(self, validation_str, save_to_name):
         """Saves the validation results to a png file for reporting purposes.
 
@@ -510,7 +513,6 @@ class _ValidationManager:
             filename = save_to_name + '_validation_' + str(valid) + '.png'
             save_df_as_png(df, title, filename, col_labels=df.columns)
 
-    
     @staticmethod
     def _create_validation_material_for_saving(validation_str, valid):
         """Returns title and dataframe for saving the validation results
@@ -544,7 +546,7 @@ class _ValidationManager:
         df.columns = col_names
         df['Effect Type'] = df['Effect Type'].apply(_ValidationManager._replace_effect_name)
         return df
-    
+
     @staticmethod
     def _split_string(string, delimiters, replacement_char=','):
         """Splits a string on all specified delimiters.
@@ -561,7 +563,7 @@ class _ValidationManager:
         for x in delimiters:
             string = string.replace(x, replacement_char)
         return string.split(replacement_char)
-    
+
     @staticmethod
     def _replace_effect_name(name):
         """Returns an easier to understand description of a causal effect type.
@@ -580,7 +582,7 @@ class _ValidationManager:
             return "indirect"
         else:
             raise KeyError("Unknown effect name.")
-        
+
 
 def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='upper left'):
     """Saves a dataframe as png to include it in a pdf later on.
@@ -608,7 +610,7 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     t.auto_set_column_width(col=list(range(len(df.columns))))
     fig.savefig(filename, bbox_inches="tight", dpi=300)
     plt.close(fig)
-       
+
 
 def _generate_pdf_report(output_name, input_names, dpi=(300, 300)):
     """Generates a pdf report with the causal graph and all results.
@@ -623,6 +625,7 @@ def _generate_pdf_report(output_name, input_names, dpi=(300, 300)):
     im_list = ims[1:]
     im.save(output_name, "PDF", dpi=dpi, save_all=True, append_images=im_list)
     print(f"Successfully generated report in {output_name}.\n")
+
 
 def _convert_rgba_to_rgb(filename):
     """Returns an rgb version of an rgba png file.

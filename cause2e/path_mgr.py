@@ -28,7 +28,7 @@ class PathManager():
         self._data_dir = data_dir
         self._output_dir = output_dir
         self._find_or_create_output_dir()
-        
+
     def _find_or_create_output_dir(self):
         """Creates the output directory if it does not exist yet."""
         if not os.path.exists(self._output_dir):
@@ -62,12 +62,12 @@ class PathManager():
         """
         file_name = self._experiment_name + additions + '.' + file_extension
         return os.path.join(self._output_dir, file_name)
-        
+
     def create_reporting_paths(self):
         """Returns the names of pngs needed for reporting."""
         output_name = self.create_output_name('pdf', '_report')
         knowledge_graph = self.create_knowledge_graph_name()
-        graph = self.png_name # TODO: What if additions were made to the default name?
+        graph = self.png_name  # TODO: What if additions were made to the default name?
         edge_analysis = self._create_edge_analysis_name()
         graphs = [knowledge_graph, graph, edge_analysis]
         estimand_types = ['ate', 'nde', 'nie']
@@ -77,7 +77,7 @@ class PathManager():
         results = [self._create_result_name(x) for x in estimand_types]
         input_names = graphs + heatmaps + validations + largest_effects + results
         return output_name, input_names
-    
+
     def create_knowledge_graph_name(self, file_extension='png'):
         return self.create_output_name(file_extension, '_knowledge_graph')
 
@@ -86,21 +86,20 @@ class PathManager():
 
     def _create_heatmap_name(self, estimand_type):
         return self.create_output_name('png', f'_heatmap_{estimand_type}')
-    
+
     def _create_validation_name(self, valid):
         return self.create_output_name('png', f'_validation_{valid}')
-    
+
     def _create_largest_effects_name(self, estimand_type):
         return self.create_output_name('png', f'_largest_effects_{estimand_type}')
 
     def _create_result_name(self, estimand_type):
         return self.create_output_name('png', f'_results_{estimand_type}')
-    
+
     @property
     def output_name_stump(self):
         """Returns an output name without file extension."""
         return self.create_output_name("")[:-1]
-    
 
 
 class PathManagerQuick(PathManager):
