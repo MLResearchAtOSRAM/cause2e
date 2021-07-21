@@ -530,13 +530,16 @@ class StructureLearnerDatabricks(StructureLearner):
         knowledge: A dictionary containing domain knowledge about required or forbidden edges in
             the causal graph. Known quantitative effects can be included for later validation.
         graph: A cause2e.Graph representing the causal graph.
-        src_str_knowledge_graph: A string that is used to show the passed domain knowledge.
-        src_str_graph: A string that is used to show the result of the graph search.
+        str_knowledge_graph: A string that is used to show the passed domain knowledge.
+        str_graph: A string that is used to show the result of the graph search.
+        str_report: A string that is used to show the pdf report.
     """
 
-    def __init__(self, paths, spark):
+    def __init__(self, paths, spark, display_width=800, display_height=400):
         super().__init__(paths)
         self._spark = spark
+        self._display_width = display_width
+        self._display_height = display_height
 
     def show_knowledge(self):
         """Shows all domain knowledge that is used for causal discovery."""
@@ -559,14 +562,23 @@ class StructureLearnerDatabricks(StructureLearner):
     @staticmethod
     def _print_knowledge_display_instruction():
         """Prints an instruction for showing the knowledge on Databricks."""
-        command = 'displayHTML(<name of StructureLearnerDatabricks>.src_str_knowledge_graph)'
+        command = 'displayHTML(<name of StructureLearnerDatabricks>.str_knowledge_graph)'
         print(f"Run {command} to show the knowledge graph.")
         print("Save the knowledge and retry if no file is found.\n")
 
     @property
-    def src_str_knowledge_graph(self):
+    def str_knowledge_graph(self):
         name = self.paths.create_knowledge_graph_name('png')
-        return self._get_src_str(name)
+        return self._get_display_str(name)
+
+    def _get_display_str(self, name):
+        """Returns a string for 'display' on Databricks with suitable dimensions.
+
+        Args:
+            name: The absolute path to a file in the filestore.
+        """
+        src_str = self._get_src_str(name)
+        return f"<img {src_str} {self._display_dimension_str}>"
 
     def _get_src_str(self, name):
         """Returns a path in the right format for 'display' on Databricks.
@@ -575,7 +587,11 @@ class StructureLearnerDatabricks(StructureLearner):
             name: The absolute path to a file in the filestore.
         """
         modified_name = name.replace('/dbfs/FileStore', 'files')
-        return f"<img src = '{modified_name}'>"
+        return f"src='{modified_name}'"
+
+    @property
+    def _display_dimension_str(self):
+        return f"width='{self._display_width}' height='{self._display_height}'"
 
     def display_graph(self, edge_analysis=True):
         """Shows the causal graph.
@@ -591,14 +607,18 @@ class StructureLearnerDatabricks(StructureLearner):
     @staticmethod
     def _print_graph_display_instruction():
         """Prints an instruction for showing the causal graph on Databricks."""
-        command = 'displayHTML(<name of StructureLearnerDatabricks>.src_str_graph)'
+        command = 'displayHTML(<name of StructureLearnerDatabricks>.str_graph)'
         print(f"Run {command} to show the graph.")
         print("Save the graph with strict=False and retry if no file is found.\n")
 
     @property
-    def src_str_graph(self):
+    def str_graph(self):
         name = self._get_graph_name('png')
-        return self._get_src_str(name)
+        return self._get_display_str(name)
+
+    @property
+    def str_report(self):
+        return self._estimator.str_report
 
     def _create_estimator(self):
         self._estimator = estimator.EstimatorDatabricks.from_learner(self, same_data=True)

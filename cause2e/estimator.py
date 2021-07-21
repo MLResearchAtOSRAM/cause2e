@@ -589,6 +589,7 @@ class EstimatorDatabricks(Estimator):
             recent robustness check.
         spark: Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
             None.
+        str_report: A string that is used to show the pdf report.
     """
 
     def __init__(self, paths, spark, transformations=[], validation_dict={}):
@@ -609,11 +610,13 @@ class EstimatorDatabricks(Estimator):
     @staticmethod
     def _print_result_display_instruction():
         """Prints an instruction for showing the pdf report on Databricks."""
-        command = 'displayHTML(<name of EstimatorDatabricks>.src_str_report)'
-        print(f"Run {command} to show the report.\n")
+        command_estim = 'displayHTML(<name of EstimatorDatabricks>.str_report)'
+        command_learner = 'displayHTML(<name of StructureLearnerDatabricks>.str_report)'
+        print(f"Run {command_estim} to show the report.")
+        print(f"Run {command_learner} to show the report if you have called the analysis directly from the learner.\n")
 
     @property
-    def src_str_report(self):
+    def str_report(self):
         return self._get_src_str(self._report_name)
 
     def _get_src_str(self, name):
