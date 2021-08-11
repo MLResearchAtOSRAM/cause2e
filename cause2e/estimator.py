@@ -19,7 +19,7 @@ For more information about steps 2-5, please refer to https://microsoft.github.i
 
 
 import dowhy
-from cause2e import _preproc, _reader, _result_mgr, _regression_mgr
+from cause2e import _preproc, _reader, _technical_estimators, _result_mgr, _regression_mgr
 
 
 class Estimator():
@@ -49,6 +49,7 @@ class Estimator():
         """Inits CausalEstimator"""
         self.paths = paths
         self.transformations = transformations.copy()
+        self._categorical_error_val = 0.1234
         self._spark = spark
         self._quick_results_list = []
         self._validation_dict = validation_dict
@@ -144,6 +145,18 @@ class Estimator():
         self._ensure_preprocessor()
         self._preprocessor.rename_variable(current_name, new_name)
 
+    def binarize_variable(self, name, one_val, zero_val=None):
+        """Transforms a variable to a binary variable.
+
+        Args:
+            name: A string indicating the name of the target variable.
+            one_val: The value that should be translated to 1.
+            zero_val: Optional; the value that should be translated to 0.
+                Use None if everything except for one_val should be translated to 0. Defaults to None.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.binarize_variable(name, one_val, zero_val)
+
     def normalize_variables(self):
         """Replaces data for all variables by their z-scores."""
         self._ensure_preprocessor()
@@ -196,6 +209,7 @@ class Estimator():
             generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
                 validations and estimates should be written to files and combined into a pdf.
         """
+        self.erase_quick_results()
         vars = self.variables
         self.run_multiple_quick_analyses(vars, vars, estimand_types, verbose, show_tables, show_heatmaps,
                                          show_validation, generate_pdf_report)
@@ -228,39 +242,18 @@ class Estimator():
                 be listed. Defaults to True.
             generate_pdf_report: Optional; A boolean indicating if the causal graph, heatmaps,
                 validations and estimates should be written to files and combined into a pdf.
+                Defaults to True.
         """
         for treatment in treatments:
             for outcome in outcomes:
                 for estimand_type in estimand_types:
-                    try:
-                        self.run_quick_analysis(treatment, outcome, estimand_type, None, verbose)
-                    except TypeError:
-                        msg = "No mediation analysis possible. Look at the ATEs instead."
-                        self._quick_results_list.append([treatment, outcome, estimand_type,
-                                                         float("NaN"), msg, msg, msg])
-                        effect = (treatment, outcome, estimand_type)
-                        if effect in self._validation_dict:
-                            self._validate_effect(effect)
-                        continue
-                    except AssertionError:
-                        msg = "No causal path"
-                        self._quick_results_list.append([treatment, outcome, estimand_type,
-                                                         0.0, msg, msg, msg])
-                        effect = (treatment, outcome, estimand_type)
-                        if effect in self._validation_dict:
-                            self._validate_effect(effect)
-                        continue
-        if show_heatmaps or generate_pdf_report:
-            self.show_heatmaps(save=generate_pdf_report)
-        if show_validation or generate_pdf_report:
-            self.show_validation(save=generate_pdf_report)
-        if show_largest_effects or generate_pdf_report:
-            for estimand_type in estimand_types:
-                self.show_largest_effects(estimand_type, save=generate_pdf_report)
-        if show_tables or generate_pdf_report:
-            self.show_quick_results(save=generate_pdf_report)
-        if generate_pdf_report:
-            self.generate_pdf_report()
+                    self.run_quick_analysis(treatment, outcome, estimand_type, None, verbose)
+        self.analyze_quick_results(estimand_types,
+                                   show_tables,
+                                   show_heatmaps,
+                                   show_validation,
+                                   show_largest_effects,
+                                   generate_pdf_report)
 
     def run_quick_analysis(self,
                            treatment,
@@ -283,31 +276,109 @@ class Estimator():
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
         """
-        # TODO: fix error when input is categorical (e.g. string-type season in sprinkler data)
-        self.initialize_model(treatment, outcome, estimand_type)
-        self.identify_estimand(verbose, proceed_when_unidentifiable=True)
-        if estimand_type == 'nonparametric-ate':
-            self.estimate_effect('backdoor.linear_regression', verbose)
-        elif estimand_type in ['nonparametric-nde', 'nonparametric-nie']:
-            fsm = dowhy.causal_estimators.linear_regression_estimator.LinearRegressionEstimator
-            ssm = dowhy.causal_estimators.linear_regression_estimator.LinearRegressionEstimator
-            self.estimate_effect('mediation.two_stage_regression',
-                                 verbose,
-                                 confidence_intervals=False,
-                                 test_significance=False,
-                                 method_params={'first_stage_model': fsm,
-                                                'second_stage_model': ssm
-                                                }
-                                 )
+        if treatment == outcome:
+            self._process_trivial_estimation(treatment, estimand_type)
         else:
-            raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
-                           + "nonparametric-nie")
-        if robustness_method:
-            self.check_robustness(robustness_method, verbose)
-        self._store_results(robustness_method)
+            try:
+                self.initialize_model(treatment, outcome, estimand_type)
+                self.identify_estimand(verbose, proceed_when_unidentifiable=True)
+                technical_estimator = _technical_estimators.EstimatorVariableTypes.from_estimator(self)
+                quantitative_effect = technical_estimator.estimate_effect(verbose)
+                self.estimated_effect = technical_estimator.estimated_effect  # only for bookkeeping
+                self.estimated_effect.value = quantitative_effect
+                if robustness_method:
+                    self.check_robustness(robustness_method, verbose)
+                self._store_results(robustness_method)
+                effect = (treatment, outcome, estimand_type)
+                if effect in self._validation_dict:
+                    self._validate_effect(effect)
+            except TypeError:
+                self._process_failed_mediation(treatment, outcome, estimand_type)
+            except AssertionError:
+                self._process_missing_causal_path(treatment, outcome, estimand_type)
+            except ValueError:
+                self._process_categorical_problem(treatment, outcome, estimand_type)
+
+    def _process_trivial_estimation(self, treatment, estimand_type):
+        """Processes the causal effect of a variable on itself.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        if estimand_type in ['nonparametric-ate', 'nonparametric-nde']:
+            val = 1.0
+        elif estimand_type == 'nonparametric-nie':
+            val = 0.0
+        self._process_result_manually(treatment, treatment, estimand_type, val, "Trivial.")
+
+    def _process_result_manually(self, treatment, outcome, estimand_type, val, msg):
+        """Processes estimation result if automated way is not possible.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+            val: A float indicating the value of the estimated causal effect.
+            msg: A string indicating why no automated analysis was possible.
+        """
+        self._store_manually(treatment, outcome, estimand_type, val, msg)
         effect = (treatment, outcome, estimand_type)
         if effect in self._validation_dict:
             self._validate_effect(effect)
+
+    def _store_manually(self, treatment, outcome, estimand_type, val, msg):
+        """Stores estimation result if automated way is not possible.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+            val: A float indicating the value of the estimated causal effect.
+            msg: A string indicating why no automated analysis was possible.
+        """
+        self._quick_results_list.append([treatment, outcome, estimand_type,
+                                         val, msg, msg, msg])
+
+    def _process_missing_mediatiors(self, treatment, outcome, estimand_type):
+        """Processes estimation result after a failed mediation analysis due to missing mediators.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        val = float("NaN")
+        msg = "No mediation analysis possible (only direct paths). Look at the ATEs instead."
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+
+    def _process_missing_causal_path(self, treatment, outcome, estimand_type):
+        """Processes estimation result if there is no causal path.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        val = 0.0
+        msg = "No causal path"
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+
+    def _process_categorical_problem(self, treatment, outcome, estimand_type):
+        """Processes estimation result after a failed analysis due to categorical mediators or confounders.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        # Pearl's Primer suggests in 3.8.4 that counterfactuals are necessary for mediation
+        # categorical confounders should not really be an issue?
+        val = self._categorical_error_val
+        msg = "Multilevel categorical variables are not fully supported as mediators or confounders. Try binary analysis."
+        print(msg)
+        print(f"Treatment: {treatment}, outcome: {outcome}, estimand_type: {estimand_type}\n")
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
 
     def initialize_model(self, treatment, outcome, estimand_type, **kwargs):
         """Initializes the causal model.
@@ -408,17 +479,11 @@ class Estimator():
         self._validation_dict[effect]['Estimated'] = estimated_val
 
     def _compare_estimated_to_expected_effect(self, estimated, expected):
-        """Compares estimated and expected values of an effect.
+        """Returns whether estimated and expected values of an effect match.
 
         Args:
             estimated: A float indicating the estimated value of the effect.
             expected: A tuple indicating expectations about the effect.
-
-        Raises:
-            AssertionError: [description]
-
-        Returns:
-            [type]: [description]
         """
         operator = expected[0]
         expected_val = expected[1]
@@ -432,8 +497,6 @@ class Estimator():
             lower_bound = expected_val
             upper_bound = expected[2]
             return lower_bound < estimated < upper_bound
-        else:
-            raise AssertionError
 
     def _store_results(self, robustness_method):
         """Stores the results of an anlysis for later inspection.
@@ -459,9 +522,43 @@ class Estimator():
                    ]
         self._quick_results_list.append(results)
 
+    def analyze_quick_results(self,
+                              estimand_types,
+                              show_tables,
+                              show_heatmaps,
+                              show_validation,
+                              show_largest_effects,
+                              generate_pdf_report):
+        """Summarizes the result of quick analyses for further analysis.
+
+        Args:
+            estimand_types: A list of strings indicating the types of causal effects.
+            show_tables: A boolean indicating if the resulting causal estimates should be
+                displayed in tabular form.
+            show_heatmaps: A boolean indicating if the resulting causal estimates should
+                be displayed and saved in heatmap form.
+            show_validation: A boolean indicating if the resulting causal estimates should
+                be compared to previous expectations.
+            show_largest_effects: A boolean indicating if the largest causal effects should
+                be listed.
+            generate_pdf_report: A boolean indicating if the causal graph, heatmaps,
+                validations and estimates should be written to files and combined into a pdf.
+        """
+        if show_heatmaps or generate_pdf_report:
+            self.show_heatmaps(save=generate_pdf_report)
+        if show_validation or generate_pdf_report:
+            self.show_validation(save=generate_pdf_report)
+        if show_largest_effects or generate_pdf_report:
+            for estimand_type in estimand_types:
+                self.show_largest_effects(estimand_type, save=generate_pdf_report)
+        if show_tables or generate_pdf_report:
+            self.show_quick_results(save=generate_pdf_report)
+        if generate_pdf_report:
+            self.generate_pdf_report()
+
     @property  # TODO: cache this?
     def _result_mgr(self):
-        return _result_mgr.ResultManager(self._quick_results_list, self._validation_dict)
+        return _result_mgr.ResultManager(self._quick_results_list, self._validation_dict, self._categorical_error_val)
 
     def erase_quick_results(self):
         """Erases stored results from quick analyses."""

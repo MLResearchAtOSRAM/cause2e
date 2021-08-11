@@ -98,6 +98,31 @@ class Preprocessor():
                       }
             self.transformations.append({'fun': trafo_type, 'kwargs': kwargs})
 
+    def binarize_variable(self, name, one_val, zero_val=None, store=True):
+        """Transforms a variable to a binary variable.
+
+        Args:
+            name: A string indicating the name of the target variable.
+            one_val: The value that should be translated to 1.
+            zero_val: Optional; the value that should be translated to 0.
+                Use None if everything except for one_val should be translated to 0. Defaults to None.
+        """
+        if zero_val:
+            translation_dict = {zero_val: 0}
+        else:
+            levels = self.data[name].unique()
+            translation_dict = {val: 0 for val in levels}
+        translation_dict[one_val] = 1
+        self.data[name] = self.data[name].map(translation_dict)
+        self.data.dropna(axis=0, inplace=True)
+        if store:
+            trafo_type = 'binarize_variable'
+            kwargs = {'name': name,
+                      'one_val': one_val,
+                      'zero_val': zero_val
+                      }
+            self.transformations.append({'fun': trafo_type, 'kwargs': kwargs})
+
     def normalize_variables(self, store=True):
         """Replaces all variables by their z-scores.
 
@@ -154,6 +179,8 @@ class Preprocessor():
             self._apply_stored_deletion(kwargs)
         elif fun == 'rename_variable':
             self._apply_stored_renaming(kwargs)
+        elif fun == 'binarize_variable':
+            self._apply_stored_binarization(kwargs)
         elif fun == 'normalize_variable':
             self._apply_stored_normalization(kwargs)
 
@@ -197,6 +224,17 @@ class Preprocessor():
         current_name = kwargs['current_name']
         new_name = kwargs['new_name']
         self.rename_variable(current_name, new_name, store=False)
+
+    def _apply_stored_binarization(self, kwargs):
+        """Applies a stored binarization of a data column.
+
+        Args:
+            kwargs: A dictionary containing all information about the transformation.
+        """
+        name = kwargs['name']
+        one_val = kwargs['one_val']
+        zero_val = kwargs['zero_val']
+        self.binarize_variable(name, one_val, zero_val, store=False)
 
     def _apply_stored_normalization(self, kwargs):
         """Applies a stored normalization of a data column.

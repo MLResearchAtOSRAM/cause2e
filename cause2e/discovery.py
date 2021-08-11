@@ -107,6 +107,18 @@ class StructureLearner():
         self._ensure_preprocessor()
         self._preprocessor.rename_variable(current_name, new_name)
 
+    def binarize_variable(self, name, one_val, zero_val=None):
+        """Transforms a variable to a binary variable.
+
+        Args:
+            name: A string indicating the name of the target variable.
+            one_val: The value that should be translated to 1.
+            zero_val: Optional; the value that should be translated to 0.
+                Use None if everything except for one_val should be translated to 0. Defaults to None.
+        """
+        self._ensure_preprocessor()
+        self._preprocessor.binarize_variable(name, one_val, zero_val)
+
     def normalize_variables(self):
         """Replaces data for all variables by their z-scores."""
         self._ensure_preprocessor()

@@ -19,8 +19,8 @@ import PIL
 class ResultManager:
     """Helper class for managing the output of analyses."""
 
-    def __init__(self, quick_results_list, validation_dict):
-        self._numeric_result_mgr = _NumericResultManager(quick_results_list)
+    def __init__(self, quick_results_list, validation_dict, categorical_error_val):
+        self._numeric_result_mgr = _NumericResultManager(quick_results_list, categorical_error_val)
         self._query_mgr = _QueryManager(self._numeric_result_mgr)
         self._heatmap_mgr = _HeatmapManager(self._numeric_result_mgr)
         self._validation_mgr = _ValidationManager(validation_dict)
@@ -103,8 +103,9 @@ class _NumericResultManager:
         quick_results_nie: A pandas DataFrame containing all quantitative natural indirect effects.
     """
 
-    def __init__(self, quick_results_list):
+    def __init__(self, quick_results_list, categorical_error_val):
         self._quick_results_list = quick_results_list
+        self.categorical_error_val = categorical_error_val
         self.quick_results = self._get_quick_results()
         self.quick_results_ate = self._get_quick_results_ate()
         self.quick_results_nde = self._get_quick_results_nde()
@@ -123,16 +124,29 @@ class _NumericResultManager:
                             )
 
     def _get_quick_results_ate(self):
-        return self._get_pivot_df_from_quick_results(estimand_type='nonparametric-ate')
+        return self._get_final_df_from_quick_results('nonparametric-ate')
 
     def _get_quick_results_nde(self):
-        pivot_df = self._get_pivot_df_from_quick_results(estimand_type='nonparametric-nde')
-        return pivot_df.fillna(self.quick_results_ate)  # no mediation -> ate equals direct effect
-        # TODO: fix error when printing results of mediation analysis from stored results
+        # no mediation -> ate equals direct effect
+        return self._get_final_df_from_quick_results('nonparametric-nde')
 
     def _get_quick_results_nie(self):
-        pivot_df = self._get_pivot_df_from_quick_results(estimand_type='nonparametric-nie')
-        return pivot_df.fillna(0)  # no mediation -> no indirect effect
+        # no mediation -> no indirect effect
+        return self._get_final_df_from_quick_results('nonparametric-nie')
+
+    def _get_final_df_from_quick_results(self, estimand_type):
+        df = self._get_pivot_df_from_quick_results(estimand_type=estimand_type)
+        if estimand_type == 'nonparametric-nde':
+            df = df.fillna(self.quick_results_ate)
+        elif estimand_type == 'nonparametric-nie':
+            df = df.fillna(0)
+        return df.replace(self.categorical_error_val, float("NaN"))
+
+    def _get_pivot_df_from_quick_results(self, estimand_type):
+        mask = self.quick_results['Estimand_type'] == estimand_type
+        df = self.quick_results[mask][['Treatment', 'Outcome', 'Estimated_effect']]
+        pivot_df = df.pivot_table(index='Treatment', columns='Outcome', dropna=False)
+        return pivot_df
 
     def show_quick_results(self, save_to_name=None):
         """Shows all results from quick analyses in tabular form."""
@@ -148,12 +162,6 @@ class _NumericResultManager:
         print(self.quick_results_nie)
         if save_to_name:
             self._save_quick_results(save_to_name)
-
-    def _get_pivot_df_from_quick_results(self, estimand_type):
-        mask = self.quick_results['Estimand_type'] == estimand_type
-        df = self.quick_results[mask][['Treatment', 'Outcome', 'Estimated_effect']]
-        pivot_df = df.pivot_table(index='Treatment', columns='Outcome', dropna=False)
-        return pivot_df
 
     def _save_quick_results(self, name):
         """Saves all quantitative quick results to a csv.
@@ -179,6 +187,7 @@ class _QueryManager:
     """Helper class for querying the stored results."""
 
     def __init__(self, numeric_results_mgr):
+        self._categorical_error_val = numeric_results_mgr.categorical_error_val
         self._results_df = numeric_results_mgr.quick_results
         self._results_ate = numeric_results_mgr.quick_results_ate
         self._results_nde = numeric_results_mgr.quick_results_nde
@@ -291,6 +300,8 @@ class _QueryManager:
         """
         if isnan(row['Estimated_effect']):
             return self.get_result_estimate(row['Treatment'], row['Outcome'], row['Estimand_type'])
+        elif row['Estimated_effect'] == self._categorical_error_val:
+            return float("NaN")
         else:
             return row['Estimated_effect']
 
