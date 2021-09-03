@@ -49,10 +49,10 @@ class Estimator():
         """Inits CausalEstimator"""
         self.paths = paths
         self.transformations = transformations.copy()
-        self._categorical_error_val = 0.1234
         self._spark = spark
-        self._quick_results_list = []
-        self._validation_dict = validation_dict
+        self._result_mgr = _result_mgr.ResultManager(quick_results_list=[],
+                                                     validation_dict=validation_dict
+                                                     )
 
     @classmethod
     def from_learner(cls, learner, same_data=False):
@@ -248,6 +248,8 @@ class Estimator():
             for outcome in outcomes:
                 for estimand_type in estimand_types:
                     self.run_quick_analysis(treatment, outcome, estimand_type, None, verbose)
+                    effect = (treatment, outcome, estimand_type)
+                    self._result_mgr.validate_effect(effect)
         self.analyze_quick_results(estimand_types,
                                    show_tables,
                                    show_heatmaps,
@@ -276,8 +278,12 @@ class Estimator():
             KeyError: 'estimand_type must be nonparametric-ate, nonparametric-nde
                 or nonparametric-nie'
         """
+        error_flag = "pass"
         if treatment == outcome:
-            self._process_trivial_estimation(treatment, estimand_type)
+            self.treatment = treatment
+            self.outcome = outcome
+            self.estimand_type = estimand_type
+            error_flag = "trivial"
         else:
             try:
                 self.initialize_model(treatment, outcome, estimand_type)
@@ -288,97 +294,20 @@ class Estimator():
                 self.estimated_effect.value = quantitative_effect
                 if robustness_method:
                     self.check_robustness(robustness_method, verbose)
-                self._store_results(robustness_method)
-                effect = (treatment, outcome, estimand_type)
-                if effect in self._validation_dict:
-                    self._validate_effect(effect)
             except TypeError:
-                self._process_failed_mediation(treatment, outcome, estimand_type)
+                error_flag = "missing_mediators"
             except AssertionError:
-                self._process_missing_causal_path(treatment, outcome, estimand_type)
+                error_flag = "missing_causal_path"
             except ValueError:
-                self._process_categorical_problem(treatment, outcome, estimand_type)
+                error_flag = "categorical_problem"
+        storage_input = self._create_storage_input(error_flag)
+        self._result_mgr.process_result(error_flag, storage_input)
 
-    def _process_trivial_estimation(self, treatment, estimand_type):
-        """Processes the causal effect of a variable on itself.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            estimand_type: A string indicating the type of causal effect.
-        """
-        if estimand_type in ['nonparametric-ate', 'nonparametric-nde']:
-            val = 1.0
-        elif estimand_type == 'nonparametric-nie':
-            val = 0.0
-        self._process_result_manually(treatment, treatment, estimand_type, val, "Trivial.")
-
-    def _process_result_manually(self, treatment, outcome, estimand_type, val, msg):
-        """Processes estimation result if automated way is not possible.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            outcome: A string indicating the name of the outcome variable.
-            estimand_type: A string indicating the type of causal effect.
-            val: A float indicating the value of the estimated causal effect.
-            msg: A string indicating why no automated analysis was possible.
-        """
-        self._store_manually(treatment, outcome, estimand_type, val, msg)
-        effect = (treatment, outcome, estimand_type)
-        if effect in self._validation_dict:
-            self._validate_effect(effect)
-
-    def _store_manually(self, treatment, outcome, estimand_type, val, msg):
-        """Stores estimation result if automated way is not possible.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            outcome: A string indicating the name of the outcome variable.
-            estimand_type: A string indicating the type of causal effect.
-            val: A float indicating the value of the estimated causal effect.
-            msg: A string indicating why no automated analysis was possible.
-        """
-        self._quick_results_list.append([treatment, outcome, estimand_type,
-                                         val, msg, msg, msg])
-
-    def _process_missing_mediatiors(self, treatment, outcome, estimand_type):
-        """Processes estimation result after a failed mediation analysis due to missing mediators.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            outcome: A string indicating the name of the outcome variable.
-            estimand_type: A string indicating the type of causal effect.
-        """
-        val = float("NaN")
-        msg = "No mediation analysis possible (only direct paths). Look at the ATEs instead."
-        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
-
-    def _process_missing_causal_path(self, treatment, outcome, estimand_type):
-        """Processes estimation result if there is no causal path.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            outcome: A string indicating the name of the outcome variable.
-            estimand_type: A string indicating the type of causal effect.
-        """
-        val = 0.0
-        msg = "No causal path"
-        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
-
-    def _process_categorical_problem(self, treatment, outcome, estimand_type):
-        """Processes estimation result after a failed analysis due to categorical mediators or confounders.
-
-        Args:
-            treatment: A string indicating the name of the treatment variable.
-            outcome: A string indicating the name of the outcome variable.
-            estimand_type: A string indicating the type of causal effect.
-        """
-        # Pearl's Primer suggests in 3.8.4 that counterfactuals are necessary for mediation
-        # categorical confounders should not really be an issue?
-        val = self._categorical_error_val
-        msg = "Multilevel categorical variables are not fully supported as mediators or confounders. Try binary analysis."
-        print(msg)
-        print(f"Treatment: {treatment}, outcome: {outcome}, estimand_type: {estimand_type}\n")
-        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+    def _create_storage_input(self, error_flag):
+        storage_input = [self.treatment, self.outcome, self.estimand_type]
+        if error_flag == "pass":
+            storage_input.extend([self.estimated_effect.value, self.estimand, self.estimated_effect])
+        return storage_input
 
     def initialize_model(self, treatment, outcome, estimand_type, **kwargs):
         """Initializes the causal model.
@@ -410,10 +339,20 @@ class Estimator():
             **kwargs: Advanced parameters for the analysis. Please refer to
                 https://microsoft.github.io/dowhy/ for more information.
         """
-        self._check_directed_paths()
+        if self.estimand_type == 'nonparametric-nde':
+            self._check_directed_edge()
+        else:
+            self._check_directed_paths()
         self.estimand = self.model.identify_effect(**kwargs)
         if verbose:
             print(self.estimand)
+
+    def _check_directed_edge(self):
+        """Checks if there is a directed edge from treatment to outcome."""
+        if self.treatment != self.outcome:
+            msg = f"There is no directed edge from {self.treatment} to {self.outcome}, so the "\
+                  + "causal effect is zero!"
+            assert (self.treatment, self.outcome) in set(self.model._graph._graph.edges), msg
 
     def _check_directed_paths(self):
         """Checks if there is a directed path from treatment to outcome."""
@@ -457,71 +396,6 @@ class Estimator():
         if verbose:
             print(self.robustness_info)
 
-    def _validate_effect(self, effect):  # TODO: should this go into a new class?
-        """Checks if an estimated effect matches previous expectations.
-
-        Args:
-            effect: A triple of treatment, outcome and estimand type.
-        """
-        self._add_estimated_effect(effect)
-        val = self._validation_dict[effect]
-        estimated = val['Estimated']
-        expected = val['Expected']
-        val['Valid'] = self._compare_estimated_to_expected_effect(estimated, expected)
-
-    def _add_estimated_effect(self, effect):
-        """Looks up the value of an estimated effect for validation.
-
-        Args:
-            effect: A triple of treatment, outcome and estimand type.
-        """
-        estimated_val = self.get_quick_result_estimate(*effect)
-        self._validation_dict[effect]['Estimated'] = estimated_val
-
-    def _compare_estimated_to_expected_effect(self, estimated, expected):
-        """Returns whether estimated and expected values of an effect match.
-
-        Args:
-            estimated: A float indicating the estimated value of the effect.
-            expected: A tuple indicating expectations about the effect.
-        """
-        operator = expected[0]
-        expected_val = expected[1]
-        if operator == 'greater':
-            return estimated > expected_val
-        elif operator == 'less':
-            return estimated < expected_val
-        elif operator == 'equal':
-            return estimated == expected_val
-        elif operator == 'between':
-            lower_bound = expected_val
-            upper_bound = expected[2]
-            return lower_bound < estimated < upper_bound
-
-    def _store_results(self, robustness_method):
-        """Stores the results of an anlysis for later inspection.
-
-        Growing dataframes dynamically is bad, therefore we use a list and convert it to a prettier
-        form only when required.
-
-        Args:
-            robustness_method: A string indicating the used robustness check. None if no check was
-                performed.
-        """
-        if robustness_method:
-            robustness_info = self.robustness_info
-        else:
-            robustness_info = 'No robustness check was performed.'
-        results = [self.treatment,
-                   self.outcome,
-                   self.estimand_type,
-                   self.estimated_effect.value,
-                   self.estimand,
-                   self.estimated_effect,
-                   robustness_info
-                   ]
-        self._quick_results_list.append(results)
-
     def analyze_quick_results(self,
                               estimand_types,
                               show_tables,
@@ -556,13 +430,9 @@ class Estimator():
         if generate_pdf_report:
             self.generate_pdf_report()
 
-    @property  # TODO: cache this?
-    def _result_mgr(self):
-        return _result_mgr.ResultManager(self._quick_results_list, self._validation_dict, self._categorical_error_val)
-
     def erase_quick_results(self):
         """Erases stored results from quick analyses."""
-        self._quick_results_list = []
+        self._result_mgr.erase_quick_results()
 
     def show_quick_results(self, save=True):
         """Shows all results from quick analyses in tabular form."""

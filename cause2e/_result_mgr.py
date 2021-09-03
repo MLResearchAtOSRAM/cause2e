@@ -19,15 +19,34 @@ import PIL
 class ResultManager:
     """Helper class for managing the output of analyses."""
 
-    def __init__(self, quick_results_list, validation_dict, categorical_error_val):
-        self._numeric_result_mgr = _NumericResultManager(quick_results_list, categorical_error_val)
-        self._query_mgr = _QueryManager(self._numeric_result_mgr)
-        self._heatmap_mgr = _HeatmapManager(self._numeric_result_mgr)
-        self._validation_mgr = _ValidationManager(validation_dict)
+    def __init__(self, quick_results_list, validation_dict):
+        self._categorical_error_val = 0.1234  # TODO: find a cleaner solution for this
+        self._validation_dict = validation_dict
+        self._storage_mgr = StorageManager(quick_results_list, self._categorical_error_val)
+        self._numeric_result_mgr = _NumericResultManager(quick_results_list, self._categorical_error_val)
+
+    @property
+    def _query_mgr(self):
+        return _QueryManager(self._numeric_result_mgr)
+
+    @property
+    def _heatmap_mgr(self):
+        return _HeatmapManager(self._numeric_result_mgr)
+
+    @property
+    def _validation_mgr(self):
+        return _ValidationManager(self._query_mgr, self._validation_dict)
 
     def show_quick_results(self, save_to_name=None):
         """Shows all results from quick analyses in tabular form."""
         self._numeric_result_mgr.show_quick_results(save_to_name)
+
+    def erase_quick_results(self):
+        """Erases stored results from quick analyses."""
+        self._numeric_result_mgr.erase_quick_results()
+
+    def process_result(self, error_flag, storage_input):
+        self._storage_mgr.process_result(error_flag, storage_input)
 
     def get_quick_result_estimate(self, treatment, outcome, estimand_type):
         """Returns a stored estimated effect.
@@ -73,6 +92,14 @@ class ResultManager:
         """
         self._heatmap_mgr.show_heatmaps(save_to_name)
 
+    def validate_effect(self, effect):
+        """Checks if an estimated effect matches previous expectations.
+
+        Args:
+            effect: A triple of treatment, outcome and estimand type.
+        """
+        self._validation_mgr.validate_effect(effect)
+
     def show_validation(self, save_to_name=None):
         """Shows if selected estimated effects match previous expectations.
 
@@ -93,6 +120,105 @@ class ResultManager:
         _generate_pdf_report(output_name, input_names, dpi)
 
 
+class StorageManager:
+    def __init__(self, quick_results_list, categorical_error_val):
+        self._quick_results_list = quick_results_list
+        self._categorical_error_val = categorical_error_val
+
+    def process_result(self, error_flag, storage_input):
+        """Processes a causal effect for further analysis.
+
+        Args:
+            error_flag: A string indicating if problems occurred during the estimation.
+            storage_input: A list containing information about the estimation process.
+        """
+        if error_flag == "pass":
+            self._store_result(storage_input)
+        elif error_flag == "trivial":
+            self._process_trivial_estimation(storage_input[0], storage_input[2])
+        elif error_flag == "missing_mediators":
+            self._process_missing_mediators(*storage_input)
+        elif error_flag == "missing_causal_path":
+            self._process_missing_causal_path(*storage_input)
+        elif error_flag == "categorical_problem":
+            self._process_categorical_problem(*storage_input)
+        else:
+            raise KeyError("Invalid error flag for storing")
+
+    def _process_trivial_estimation(self, treatment, estimand_type):
+        """Processes the causal effect of a variable on itself.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        if estimand_type in ['nonparametric-ate', 'nonparametric-nde']:
+            val = 1.0
+        elif estimand_type == 'nonparametric-nie':
+            val = 0.0
+        self._process_result_manually(treatment, treatment, estimand_type, val, "Trivial.")
+
+    def _process_result_manually(self, treatment, outcome, estimand_type, val, msg):
+        """Processes estimation result if automated way is not possible.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+            val: A float indicating the value of the estimated causal effect.
+            msg: A string indicating why no automated analysis was possible.
+        """
+        self._store_result([treatment, outcome, estimand_type, val, msg, msg])
+
+    def _process_missing_mediators(self, treatment, outcome, estimand_type):
+        """Processes estimation result after a failed mediation analysis due to missing mediators.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        val = float("NaN")
+        msg = "No mediation analysis possible (only direct paths). Look at the ATEs instead."
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+
+    def _process_missing_causal_path(self, treatment, outcome, estimand_type):
+        """Processes estimation result if there is no causal path.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        val = 0.0
+        msg = "No causal path or no direct edge."
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+
+    def _process_categorical_problem(self, treatment, outcome, estimand_type):
+        """Processes estimation result after a failed analysis due to categorical mediators or confounders.
+
+        Args:
+            treatment: A string indicating the name of the treatment variable.
+            outcome: A string indicating the name of the outcome variable.
+            estimand_type: A string indicating the type of causal effect.
+        """
+        # Pearl's Primer suggests in 3.8.4 that counterfactuals are necessary for mediation
+        # categorical confounders should not really be an issue?
+        val = self._categorical_error_val
+        msg = "Multilevel categorical variables are not fully supported as mediators or confounders. Try binary analysis."
+        print(msg)
+        print(f"Treatment: {treatment}, outcome: {outcome}, estimand_type: {estimand_type}\n")
+        self._process_result_manually(treatment, outcome, estimand_type, val, msg)
+
+    def _store_result(self, storage_input):
+        """Processes the results of a successful anlysis for later inspection.
+
+        Growing dataframes dynamically is bad, therefore we use a list and convert it to a prettier
+        form only when required.
+        """
+        self._quick_results_list.append(storage_input)
+
+
 class _NumericResultManager:
     """Helper class for dealing with numeric result tables.
 
@@ -106,12 +232,9 @@ class _NumericResultManager:
     def __init__(self, quick_results_list, categorical_error_val):
         self._quick_results_list = quick_results_list
         self.categorical_error_val = categorical_error_val
-        self.quick_results = self._get_quick_results()
-        self.quick_results_ate = self._get_quick_results_ate()
-        self.quick_results_nde = self._get_quick_results_nde()
-        self.quick_results_nie = self._get_quick_results_nie()
 
-    def _get_quick_results(self):
+    @property
+    def quick_results(self):
         return pd.DataFrame(self._quick_results_list,
                             columns=['Treatment',
                                      'Outcome',
@@ -119,18 +242,20 @@ class _NumericResultManager:
                                      'Estimated_effect',
                                      'Estimand',
                                      'Estimation',
-                                     'Robustness_info',
                                      ]
                             )
 
-    def _get_quick_results_ate(self):
+    @property
+    def quick_results_ate(self):
         return self._get_final_df_from_quick_results('nonparametric-ate')
 
-    def _get_quick_results_nde(self):
+    @property
+    def quick_results_nde(self):
         # no mediation -> ate equals direct effect
         return self._get_final_df_from_quick_results('nonparametric-nde')
 
-    def _get_quick_results_nie(self):
+    @property
+    def quick_results_nie(self):
         # no mediation -> no indirect effect
         return self._get_final_df_from_quick_results('nonparametric-nie')
 
@@ -182,6 +307,10 @@ class _NumericResultManager:
             self.quick_results_nie.to_csv(f, line_terminator="\n")
             f.write("\n")
 
+    def erase_quick_results(self):
+        """Erases stored results from quick analyses."""
+        self._quick_results_list.clear()
+
 
 class _QueryManager:
     """Helper class for querying the stored results."""
@@ -231,7 +360,6 @@ class _QueryManager:
         # catches cases where no full analysis was performed.
         if row['Estimand'] != row['Estimation']:
             print(row['Estimation'])
-            print(row['Robustness_info'])
 
     def get_result_estimate(self, treatment, outcome, estimand_type):
         """Returns a stored estimated effect.
@@ -444,8 +572,51 @@ class _HeatmapManager:
 class _ValidationManager:
     """Helper class for validating expected causal effects."""
 
-    def __init__(self, validation_dict):
+    def __init__(self, query_mgr, validation_dict):
+        self._query_mgr = query_mgr
         self._validation_dict = validation_dict
+
+    def validate_effect(self, effect):
+        """Checks if an estimated effect matches previous expectations.
+
+        Args:
+            effect: A triple of treatment, outcome and estimand type.
+        """
+        if effect in self._validation_dict:
+            self._add_estimated_effect(effect)
+            val = self._validation_dict[effect]
+            estimated = val['Estimated']
+            expected = val['Expected']
+            val['Valid'] = self._compare_estimated_to_expected_effect(estimated, expected)
+
+    def _add_estimated_effect(self, effect):
+        """Looks up the value of an estimated effect for validation.
+
+        Args:
+            effect: A triple of treatment, outcome and estimand type.
+        """
+        estimated_val = self._query_mgr.get_result_estimate(*effect)
+        self._validation_dict[effect]['Estimated'] = estimated_val
+
+    def _compare_estimated_to_expected_effect(self, estimated, expected):
+        """Returns whether estimated and expected values of an effect match.
+
+        Args:
+            estimated: A float indicating the estimated value of the effect.
+            expected: A tuple indicating expectations about the effect.
+        """
+        operator = expected[0]
+        expected_val = expected[1]
+        if operator == 'greater':
+            return estimated > expected_val
+        elif operator == 'less':
+            return estimated < expected_val
+        elif operator == 'equal':
+            return estimated == expected_val
+        elif operator == 'between':
+            lower_bound = expected_val
+            upper_bound = expected[2]
+            return lower_bound < estimated < upper_bound
 
     def show_validation(self, save_to_name=None):
         """Shows if selected estimated effects match previous expectations.
