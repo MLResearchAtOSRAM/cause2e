@@ -1,0 +1,75 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- master
+- ci
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+strategy:
+  matrix:
+    Python37:
+      python.version: '3.7'
+    Python38:
+      python.version: '3.8'
+    Python39:
+      python.version: '3.9'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install git+git://github.com/bd2kccd/py-causal
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
+
+- script: |
+    pip install pytest pytest-azurepipelines
+    pip install pytest-cov
+    python -m pytest --junitxml=junit/test-results.xml --cov=cause2e --cov-report=xml tests
+  displayName: 'Run tests with pytest and check test coverage'
+
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFiles: '**/test-*.xml'
+    testRunTitle: 'Publish test results for Python $(python.version)'
+
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+
+- script: pip install --upgrade sphinx
+  displayName: 'Install sphinx'
+
+- script: python setup.py install
+  displayName: 'Setup python package.'
+
+- task: CmdLine@2
+  inputs:
+    script: 'make html'
+    workingDirectory: '$(Build.SourcesDirectory)/docs/'
+  displayName: 'Compile documentation'
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/docs/_build/html'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    Contents: '**'
+  displayName: 'Copy documentation files to artifact directory'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'documentation'
+    publishLocation: 'Container'
+  displayName: 'Publish documentation as artifact'
