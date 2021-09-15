@@ -23,12 +23,16 @@ setuptools.setup(
     python_requires='>=3.6',
     install_requires=[
         "dowhy",
+        "graphviz"
         "ipython",
         "networkx",
         "numpy",
         "pandas",
         "pillow",
+        "pyarrow"
         "pycausal",
-        "pydot"
+        "pydot",
+        "pyspark",
+        "seaborn"
     ]
 )
