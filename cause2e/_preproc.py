@@ -41,7 +41,7 @@ class Preprocessor():
         self.add_variable(name, vals, store=False)
         if not keep_old:
             for name in input_cols:
-                self.delete_variable(name)
+                self.delete_variable(name, store=False)
         if store:
             trafo_type = 'combine_variables'
             kwargs = {'name': name,
