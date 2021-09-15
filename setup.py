@@ -29,7 +29,7 @@ setuptools.setup(
         "numpy",
         "pandas",
         "pillow",
-        "pyarrow"
+        "pyarrow",
         "pycausal",
         "pydot",
         "pyspark",
