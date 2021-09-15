@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/OsramDS/cause2e_github/_apis/build/status/MLResearchAtOSRAM.cause2e?branchName=ci)](https://dev.azure.com/OsramDS/cause2e_github/_build/latest?definitionId=24&branchName=ci)
+
 ## Overview:
 The cause2e package provides tools for performing an **end-to-end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
 - learn a graphical causal model of the data generating process
