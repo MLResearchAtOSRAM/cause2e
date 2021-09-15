@@ -304,7 +304,12 @@ class StructureLearner():
                 show_algo_params to find out which ones need to be passed.
         """
         self._searcher = self._plain_searcher
-        self._searcher.run_search(algo, use_knowledge, verbose, keep_vm, **kwargs)
+        self._searcher.run_search(algo=algo,
+                                  use_knowledge=use_knowledge,
+                                  verbose=verbose,
+                                  keep_vm=keep_vm,
+                                  **kwargs
+                                  )
         self.graph = self._searcher.graph_output
         if show_graph:
             self.display_graph()
