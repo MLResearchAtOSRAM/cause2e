@@ -55,15 +55,15 @@ def _remove_head(text):
     return new_text[0] + newest_text[1]
 
 
-docs = Path('.') / 'docs'
+sphinx = Path('.') / 'sphinx_config'
 # delete previous documentation build
-build = docs / '_build'
+build = sphinx / '_build'
 delete_directory(build)
 # build documentation
-make = docs / 'make.bat'
+make = sphinx / 'make.bat'
 subprocess.run(f'{make} html')
 # update htmls
-html = docs / '_build' / 'html'
+html = sphinx / '_build' / 'html'
 update_html_files(html)
 # remove other build artifacts
 doctrees = build / 'doctrees'
@@ -72,3 +72,6 @@ _sources = html / '_sources'
 artifacts = [doctrees, _static, _sources]
 for artifact in artifacts:
     delete_directory(artifact)
+# copy folder to docs folder
+docs = Path('.') / 'docs'
+subprocess.run(f'copy {html} {docs}', shell=True)
