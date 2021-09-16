@@ -57,12 +57,12 @@ steps:
 - task: CmdLine@2
   inputs:
     script: 'make html'
-    workingDirectory: '$(Build.SourcesDirectory)/docs/'
+    workingDirectory: '$(Build.SourcesDirectory)/sphinx_config/'
   displayName: 'Compile documentation'
 
 - task: CopyFiles@2
   inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/docs/_build/html'
+    SourceFolder: '$(Build.SourcesDirectory)/sphinx_config/_build/html'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
     Contents: '**'
   displayName: 'Copy documentation files to artifact directory'
