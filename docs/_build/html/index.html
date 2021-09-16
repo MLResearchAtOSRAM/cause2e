@@ -1,0 +1,1510 @@
+---
+layout: default
+---
+<!DOCTYPE html>
+
+<html>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-discovery">
+<span id="welcome-to-cause2e-s-documentation"></span><h1>Welcome to cause2e’s documentation!<a class="headerlink" href="#module-discovery" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="discovery-py">
+<h2>discovery.py<a class="headerlink" href="#discovery-py" title="Permalink to this headline">¶</a></h2>
+<p>This module implements the StructureLearner class.</p>
+<p>It is used to learn a causal graph from domain knowledge and data.
+The proposed procedure is as follows:</p>
+<ol class="arabic simple">
+<li><p>Read the data from a csv or parquet file.</p></li>
+<li><p>Preprocess the data (e.g. delete or recombine variables).</p></li>
+<li><p>Pass the domain knowledge.</p></li>
+<li><p>Run a causal discovery algorithm.</p></li>
+<li><p>Check if the graph looks sensible and orient remaining undirected or misdirected edges.</p></li>
+<li><p>Check if the graph is a DAG conforming to the domain knowledge.</p></li>
+<li><p>Save the graph in various file formats.</p></li>
+</ol>
+<dl class="py class">
+<dt id="discovery.StructureLearner">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">discovery.</span></code><code class="sig-name descname"><span class="pre">StructureLearner</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for performing causal discovery.</p>
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.paths">
+<code class="sig-name descname"><span class="pre">paths</span></code><a class="headerlink" href="#discovery.StructureLearner.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.PathManager managing paths and file names.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.data">
+<code class="sig-name descname"><span class="pre">data</span></code><a class="headerlink" href="#discovery.StructureLearner.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pandas.Dataframe containing the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.transformations">
+<code class="sig-name descname"><span class="pre">transformations</span></code><a class="headerlink" href="#discovery.StructureLearner.transformations" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list storing all the performed preprocessing transformations.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.variables">
+<code class="sig-name descname"><span class="pre">variables</span></code><a class="headerlink" href="#discovery.StructureLearner.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.continuous">
+<code class="sig-name descname"><span class="pre">continuous</span></code><a class="headerlink" href="#discovery.StructureLearner.continuous" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all continuous variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.discrete">
+<code class="sig-name descname"><span class="pre">discrete</span></code><a class="headerlink" href="#discovery.StructureLearner.discrete" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all discrete variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.knowledge">
+<code class="sig-name descname"><span class="pre">knowledge</span></code><a class="headerlink" href="#discovery.StructureLearner.knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary containing domain knowledge about required or forbidden edges in
+the causal graph. Known quantitative effects can be included for later validation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearner.graph">
+<code class="sig-name descname"><span class="pre">graph</span></code><a class="headerlink" href="#discovery.StructureLearner.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.Graph representing the causal graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.add_edge">
+<code class="sig-name descname"><span class="pre">add_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.add_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an edge to the causal graph.</p>
+<p>Consider adding the desired edge to the domain knowledge and rerunning the search if you
+are sure that it belongs in the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the name of the source variable.
+For and edge ‘a -&gt; b’, a is the source.</p></li>
+<li><p><strong>destination</strong> – A string indicating the name of the destination variable.
+For and edge ‘a -&gt; b’, b is the destination.</p></li>
+<li><p><strong>directed</strong> – Optional; A boolean indicating if the edge should be a directed one. If not,
+the roles of source and destination can be exchanged. Defaults to True.</p></li>
+<li><p><strong>show</strong> – Optional; A boolean indicating if the resulting graph should be displayed.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.add_variable">
+<code class="sig-name descname"><span class="pre">add_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.add_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a new variable to the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the new variable.</p></li>
+<li><p><strong>vals</strong> – A column of values for the new variable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.binarize_variable">
+<code class="sig-name descname"><span class="pre">binarize_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.binarize_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a variable to a binary variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the target variable.</p></li>
+<li><p><strong>one_val</strong> – The value that should be translated to 1.</p></li>
+<li><p><strong>zero_val</strong> – Optional; the value that should be translated to 0.
+Use None if everything except for one_val should be translated to 0. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.combine_variables">
+<code class="sig-name descname"><span class="pre">combine_variables</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.combine_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines data from existing variables into a new variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the new variable.</p></li>
+<li><p><strong>input_cols</strong> – A list containing the names of the variables that are used for generating
+the new variable.</p></li>
+<li><p><strong>func</strong> – A function describing how the new variable is calculated from the input variables.</p></li>
+<li><p><strong>keep_old</strong> – Optional; A boolean indicating if we want to keep the input variables in our
+data. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.delete_variable">
+<code class="sig-name descname"><span class="pre">delete_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.delete_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a variable from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – A string indicating the name of the target variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.display_graph">
+<code class="sig-name descname"><span class="pre">display_graph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edge_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.display_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows the causal graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>edge_analysis</strong> – Optional; A boolean indicating if an analysis about the influence of
+domain knowledge on the resulting graph should be shown.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.erase_knowledge">
+<code class="sig-name descname"><span class="pre">erase_knowledge</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.erase_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Erases all domain knowledge.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.has_edge">
+<code class="sig-name descname"><span class="pre">has_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.has_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the causal graph contains a specific edge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the name of the source variable.
+For and edge ‘a -&gt; b’, a is the source.</p></li>
+<li><p><strong>destination</strong> – A string indicating the name of the destination variable.
+For and edge ‘a -&gt; b’, b is the destination.</p></li>
+<li><p><strong>directed</strong> – Optional; A boolean indicating if the edge should be a directed one. If not,
+the roles of source and destination can be exchanged. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.has_node">
+<code class="sig-name descname"><span class="pre">has_node</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.has_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the causal graph contains a specific node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – A string indicating the name of the node in question.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.has_undirected_edges">
+<code class="sig-name descname"><span class="pre">has_undirected_edges</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.has_undirected_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the causal graph has undirected edges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A boolean that is True if and only if the graph has at least one undirected edge.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.is_acyclic">
+<code class="sig-name descname"><span class="pre">is_acyclic</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.is_acyclic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the causal graph is acyclic.</p>
+<p>The graph is considered acyclic if it has no undirected edges and does not
+contain any directed cycles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A boolean that is True if and only if the graph is acyclic.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>AssertionError</strong> – At least one edge is undirected.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.normalize_variable">
+<code class="sig-name descname"><span class="pre">normalize_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.normalize_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces a variable by its z-scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – A string indicating the name of the target variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.normalize_variables">
+<code class="sig-name descname"><span class="pre">normalize_variables</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.normalize_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces data for all variables by their z-scores.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.print_edge_analysis">
+<code class="sig-name descname"><span class="pre">print_edge_analysis</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.print_edge_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyzes which part of the edges were forced by domain knowledge.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.read_csv">
+<code class="sig-name descname"><span class="pre">read_csv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.read_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data from a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.read_parquet">
+<code class="sig-name descname"><span class="pre">read_parquet</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.read_parquet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data rom a parquet file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.remove_edge">
+<code class="sig-name descname"><span class="pre">remove_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.remove_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an edge from the causal graph.</p>
+<p>Consider adding the desired edge to the domain knowledge and rerunning the search if you
+are sure that it does not belong in the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the name of the source variable.
+For and edge ‘a -&gt; b’, a is the source.</p></li>
+<li><p><strong>destination</strong> – A string indicating the name of the destination variable.
+For and edge ‘a -&gt; b’, b is the destination.</p></li>
+<li><p><strong>directed</strong> – Optional; A boolean indicating if the edge should be a directed one. If not,
+the roles of source and destination can be exchanged. Defaults to True.</p></li>
+<li><p><strong>show</strong> – Optional; A boolean indicating if the resulting graph should be displayed.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.rename_variable">
+<code class="sig-name descname"><span class="pre">rename_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.rename_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renames a variable in the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_name</strong> – A string indicating the current name of the variable.</p></li>
+<li><p><strong>new_name</strong> – A string indicating the desired new name of the variable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.respects_knowledge">
+<code class="sig-name descname"><span class="pre">respects_knowledge</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.respects_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the causal graph respects the domain knowledge.</p>
+<p>This means that it contains all the edges that were required in the domain knowledge
+and none of the edges that were forbidden in the domain knowledge.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A boolean that is True if and only if the graph respects the domain knowledge.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.reverse_edge">
+<code class="sig-name descname"><span class="pre">reverse_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">direction_strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.reverse_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverses an edge in the causal graph.</p>
+<p>Consider adding the desired edge to the domain knowledge and rerunning the search if you
+are sure that it belongs in the graph in the desired orientation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the name of the source variable.
+For and edge ‘a -&gt; b’, a is the source.</p></li>
+<li><p><strong>destination</strong> – A string indicating the name of the destination variable.
+For and edge ‘a -&gt; b’, b is the destination.</p></li>
+<li><p><strong>direction_strict</strong> – Optional; A boolean indicating if the edge must exist in the
+direction ‘source -&gt; destination’. If not, the edge ‘destination -&gt; source’ is also
+detected and reversed if it exists. Defaults to False.</p></li>
+<li><p><strong>show</strong> – Optional; A boolean indicating if the resulting graph should be displayed.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.run_all_quick_analyses">
+<code class="sig-name descname"><span class="pre">run_all_quick_analyses</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimand_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['nonparametric-ate',</span> <span class="pre">'nonparametric-nde',</span> <span class="pre">'nonparametric-nie']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_heatmaps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_validation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_largest_effects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_pdf_report</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.run_all_quick_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs all possible quick causal anlyses with preset parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>estimand_types</strong> – A list of strings indicating the types of causal effects.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed for each
+analysis. Defaults to False.</p></li>
+<li><p><strong>show_tables</strong> – Optional; A boolean indicating if the resulting causal estimates should be
+displayed in tabular form. Defaults to True.</p></li>
+<li><p><strong>show_heatmaps</strong> – Optional; A boolean indicating if the resulting causal estimates should
+be displayed and saved in heatmap form. Defaults to True.</p></li>
+<li><p><strong>show_validation</strong> – Optional; A boolean indicating if the resulting causal estimates
+should be compared to previous expectations. Defaults to True.</p></li>
+<li><p><strong>show_largest_effects</strong> – Optional; A boolean indicating if the largest causal effects should
+be listed. Defaults to True.</p></li>
+<li><p><strong>generate_pdf_report</strong> – Optional; A boolean indicating if the causal graph, heatmaps,
+validations and estimates should be written to files and combined into a pdf.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.run_quick_search">
+<code class="sig-name descname"><span class="pre">run_quick_search</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_vm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.run_quick_search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Infers the causal graph from the data and domain knowledge with preset parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if we want verbose output. Defaults to True.</p></li>
+<li><p><strong>keep_vm</strong> – A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
+after the search. This is required to use TETRAD objects afterwards. Defaults to
+True.</p></li>
+<li><p><strong>show_graph</strong> – A boolean indicating if the resulting graph should be shown. Defaults to
+True.</p></li>
+<li><p><strong>show_graph</strong> – A boolean indicating if the resulting graph should be saved. Defaults to
+True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.run_search">
+<code class="sig-name descname"><span class="pre">run_search</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">algo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_knowledge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_vm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.run_search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Infers the causal graph from the data and domain knowledge.</p>
+<p>This is where the causal discovery algorithms are invoked. Currently only algorithms from
+the TETRAD program are available. The algorithms are called via pycausal, which is a Python
+wrapper around the TETRAD program provided by the creators of the original software. It
+seems that superfluous arguments are ignored, meaning e.g. that passing a score does not
+cause problems when invoking constraint based algorithms like PC. Note that you do not need
+to specify a threshold for distinguish between discrete and continuous variables, since
+this is taken care of internally by the cause2e.searcher.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>algo</strong> – A string indicating the search algorithm.</p></li>
+<li><p><strong>use_knowledge</strong> – Optional; A boolean indicating if we want to use our domain knowledge
+(some TETRAD algorithms cannot use it). Defaults to True.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if we want verbose output. Defaults to True.</p></li>
+<li><p><strong>keep_vm</strong> – A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
+after the search. This is required to use TETRAD objects afterwards. Defaults to
+True.</p></li>
+<li><p><strong>show_graph</strong> – A boolean indicating if the resulting graph should be shown. Defaults to
+True.</p></li>
+<li><p><strong>show_graph</strong> – A boolean indicating if the resulting graph should be saved. Defaults to
+True.</p></li>
+<li><p><strong>**kwargs</strong> – Arguments that are used to further specify parameters for the search. Use
+show_algo_params to find out which ones need to be passed.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.save_graph">
+<code class="sig-name descname"><span class="pre">save_graph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_extension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.save_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the causal graph to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_extension</strong> – A string indicating the desired file extension.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if confirmation messages should be printed.
+Defaults to True.</p></li>
+<li><p><strong>strict</strong> – Optional; A boolean indicating if the graph must be acyclic and in accordance
+to the domain knowledge to allow saving. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.save_graphs">
+<code class="sig-name descname"><span class="pre">save_graphs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_extensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['dot',</span> <span class="pre">'png',</span> <span class="pre">'svg']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.save_graphs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the causal graph in various file formats.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_extensions</strong> – Optional; A list of strings indicating the desired file extensions.
+Defaults to [‘dot’, ‘png’, ‘svg’].</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if confirmation messages should be printed.
+Defaults to True.</p></li>
+<li><p><strong>strict</strong> – Optional; A boolean indicating if the graph must be acyclic and in accordance
+to the domain knowledge to allow saving. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.save_knowledge">
+<code class="sig-name descname"><span class="pre">save_knowledge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'png'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.save_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the knowledge graph to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_extension</strong> – A string indicating the desired file extension.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if confirmation messages should be printed.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.set_knowledge">
+<code class="sig-name descname"><span class="pre">set_knowledge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edge_creator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_creator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.set_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the domain knowledge that we have a about the causal graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>edge_creator</strong> – A cause2e.knowledge.EdgeCreator that has been used to create
+required and forbidden edges.</p></li>
+<li><p><strong>validation_creator</strong> – Optional; A cause2e.knowledge.ValidationCreator that has been used
+to create a dictionary containing expected quantitative causal effects. These are
+evaluated after estimation of the effects. Defaults to None.</p></li>
+<li><p><strong>show</strong> – Optional; A boolean indicating if information about the passed knowledge should
+be displayed. Defaults to True.</p></li>
+<li><p><strong>show</strong> – Optional; A boolean indicating if information about the passed knowledge should
+be saved to a png. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_algo_info">
+<code class="sig-name descname"><span class="pre">show_algo_info</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">algo_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_algo_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows information about a selected algorithm from the TETRAD program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>algo_name</strong> – A string indicating the name of the algorithm of interest.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_algo_params">
+<code class="sig-name descname"><span class="pre">show_algo_params</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">algo_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">score_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_algo_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows the parameters that are required for a causal search with the TETRAD program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>algo_name</strong> – A string indicating the name of the algorithm of interest.</p></li>
+<li><p><strong>test_name</strong> – Optional; A string indicating the independence test that the algorithm uses.
+Use show_algo_info to find out if this is a necessary input. Defaults to None.</p></li>
+<li><p><strong>score_name</strong> – Optional; A string indicating the search score that the algorithm uses.
+Use show_algo_info to find out if this is a necessary input. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_independence_tests">
+<code class="sig-name descname"><span class="pre">show_independence_tests</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_independence_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all independence tests that the TETRAD program offers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_knowledge">
+<code class="sig-name descname"><span class="pre">show_knowledge</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all domain knowledge that is used for causal discovery.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_search_algos">
+<code class="sig-name descname"><span class="pre">show_search_algos</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_search_algos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all search algorithms that the TETRAD program offers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearner.show_search_scores">
+<code class="sig-name descname"><span class="pre">show_search_scores</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearner.show_search_scores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all search scores that the TETRAD program offers.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="discovery.StructureLearnerDatabricks">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">discovery.</span></code><code class="sig-name descname"><span class="pre">StructureLearnerDatabricks</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">800</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">400</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearnerDatabricks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for performing causal discovery on a Databricks cluster.</p>
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.paths">
+<code class="sig-name descname"><span class="pre">paths</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.PathManager managing paths and file names.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.data">
+<code class="sig-name descname"><span class="pre">data</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pandas.Dataframe containing the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.transformations">
+<code class="sig-name descname"><span class="pre">transformations</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.transformations" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list storing all the performed preprocessing transformations.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.variables">
+<code class="sig-name descname"><span class="pre">variables</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.continuous">
+<code class="sig-name descname"><span class="pre">continuous</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.continuous" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all continuous variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.discrete">
+<code class="sig-name descname"><span class="pre">discrete</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.discrete" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all discrete variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.knowledge">
+<code class="sig-name descname"><span class="pre">knowledge</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary containing domain knowledge about required or forbidden edges in
+the causal graph. Known quantitative effects can be included for later validation.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.graph">
+<code class="sig-name descname"><span class="pre">graph</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.Graph representing the causal graph.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.str_knowledge_graph">
+<code class="sig-name descname"><span class="pre">str_knowledge_graph</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.str_knowledge_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string that is used to show the passed domain knowledge.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.str_graph">
+<code class="sig-name descname"><span class="pre">str_graph</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.str_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string that is used to show the result of the graph search.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="discovery.StructureLearnerDatabricks.str_report">
+<code class="sig-name descname"><span class="pre">str_report</span></code><a class="headerlink" href="#discovery.StructureLearnerDatabricks.str_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string that is used to show the pdf report.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearnerDatabricks.display_graph">
+<code class="sig-name descname"><span class="pre">display_graph</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edge_analysis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearnerDatabricks.display_graph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows the causal graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>edge_analysis</strong> – Optional; A boolean indicating if an analysis about the influence of
+domain knowledge on the resulting graph should be shown.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="discovery.StructureLearnerDatabricks.show_knowledge">
+<code class="sig-name descname"><span class="pre">show_knowledge</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#discovery.StructureLearnerDatabricks.show_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all domain knowledge that is used for causal discovery.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<span class="target" id="module-estimator"></span><div class="section" id="estimator-py">
+<h2>estimator.py<a class="headerlink" href="#estimator-py" title="Permalink to this headline">¶</a></h2>
+<p>This module implements the Estimator class.</p>
+<p>It is used to estimate causal effects from the data and the causal graph.
+The module contains a wrapper around the core functionality of the DoWhy library and some utiliy
+methods for transitioning to the estimation phase after a causal discovery phase.
+The proposed procedure is as follows:</p>
+<ol class="arabic simple">
+<li><p>Imitate the preprocessing steps that have been applied to the data before the causal discovery.</p></li>
+<li><p>Create a causal model from the data, the causal graph and the desired cause-effect pair.</p></li>
+<li><p>Use do-calculus to algebraically identify a statistical estimand for the desired causal effect.</p></li>
+<li><p>Estimate the estimand from the data.</p></li>
+<li><p>Check the robustness of the estimate.</p></li>
+</ol>
+<p>For more information about steps 2-5, please refer to <a class="reference external" href="https://microsoft.github.io/dowhy/">https://microsoft.github.io/dowhy/</a>.</p>
+<dl class="py class">
+<dt id="estimator.Estimator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">estimator.</span></code><code class="sig-name descname"><span class="pre">Estimator</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for estimating causal effects.</p>
+<dl class="py attribute">
+<dt id="estimator.Estimator.paths">
+<code class="sig-name descname"><span class="pre">paths</span></code><a class="headerlink" href="#estimator.Estimator.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.PathManager managing paths and file names.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.data">
+<code class="sig-name descname"><span class="pre">data</span></code><a class="headerlink" href="#estimator.Estimator.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pandas.Dataframe containing the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.transformations">
+<code class="sig-name descname"><span class="pre">transformations</span></code><a class="headerlink" href="#estimator.Estimator.transformations" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list storing all the performed preprocessing transformations. Ensures
+that the data fits the causal graph.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.variables">
+<code class="sig-name descname"><span class="pre">variables</span></code><a class="headerlink" href="#estimator.Estimator.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.model">
+<code class="sig-name descname"><span class="pre">model</span></code><a class="headerlink" href="#estimator.Estimator.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_model.CausalModel that can identify, estimate and refute causal
+effects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.treatment">
+<code class="sig-name descname"><span class="pre">treatment</span></code><a class="headerlink" href="#estimator.Estimator.treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent treatment variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.outcome">
+<code class="sig-name descname"><span class="pre">outcome</span></code><a class="headerlink" href="#estimator.Estimator.outcome" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent outcome variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.estimand_type">
+<code class="sig-name descname"><span class="pre">estimand_type</span></code><a class="headerlink" href="#estimator.Estimator.estimand_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent type of causal effect.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.estimand">
+<code class="sig-name descname"><span class="pre">estimand</span></code><a class="headerlink" href="#estimator.Estimator.estimand" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_identifier.IdentifiedEstimand indicating the most recent estimand.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.estimated_effect">
+<code class="sig-name descname"><span class="pre">estimated_effect</span></code><a class="headerlink" href="#estimator.Estimator.estimated_effect" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_estimator.CausalEstimate indicating the most recent
+estimated effect.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.robustness_info">
+<code class="sig-name descname"><span class="pre">robustness_info</span></code><a class="headerlink" href="#estimator.Estimator.robustness_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_refuter.CausalRefutation indicating the results of the most
+recent robustness check.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.Estimator.spark">
+<code class="sig-name descname"><span class="pre">spark</span></code><a class="headerlink" href="#estimator.Estimator.spark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
+None.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.add_variable">
+<code class="sig-name descname"><span class="pre">add_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.add_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a new variable to the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the new variable.</p></li>
+<li><p><strong>vals</strong> – A column of values for the new variable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.analyze_quick_results">
+<code class="sig-name descname"><span class="pre">analyze_quick_results</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimand_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_tables</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_heatmaps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_validation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_largest_effects</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_pdf_report</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.analyze_quick_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Summarizes the result of quick analyses for further analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>estimand_types</strong> – A list of strings indicating the types of causal effects.</p></li>
+<li><p><strong>show_tables</strong> – A boolean indicating if the resulting causal estimates should be
+displayed in tabular form.</p></li>
+<li><p><strong>show_heatmaps</strong> – A boolean indicating if the resulting causal estimates should
+be displayed and saved in heatmap form.</p></li>
+<li><p><strong>show_validation</strong> – A boolean indicating if the resulting causal estimates should
+be compared to previous expectations.</p></li>
+<li><p><strong>show_largest_effects</strong> – A boolean indicating if the largest causal effects should
+be listed.</p></li>
+<li><p><strong>generate_pdf_report</strong> – A boolean indicating if the causal graph, heatmaps,
+validations and estimates should be written to files and combined into a pdf.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.binarize_variable">
+<code class="sig-name descname"><span class="pre">binarize_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.binarize_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a variable to a binary variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the target variable.</p></li>
+<li><p><strong>one_val</strong> – The value that should be translated to 1.</p></li>
+<li><p><strong>zero_val</strong> – Optional; the value that should be translated to 0.
+Use None if everything except for one_val should be translated to 0. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.check_robustness">
+<code class="sig-name descname"><span class="pre">check_robustness</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.check_robustness" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the robustness of the estimated causal effects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method_name</strong> – The name of the robustness check to be used.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed. Defaults
+to True.</p></li>
+<li><p><strong>**kwargs</strong> – Advanced parameters for the analysis. Please refer to
+<a class="reference external" href="https://microsoft.github.io/dowhy/">https://microsoft.github.io/dowhy/</a> for more information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.combine_variables">
+<code class="sig-name descname"><span class="pre">combine_variables</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_old</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.combine_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines data from existing variables into a new variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – A string indicating the name of the new variable.</p></li>
+<li><p><strong>input_cols</strong> – A list containing the names of the variables that are used for generating
+the new variable.</p></li>
+<li><p><strong>func</strong> – A function describing how the new variable is calculated from the input variables.</p></li>
+<li><p><strong>keep_old</strong> – Optional; A boolean indicating if we want to keep the input variables in our
+data. Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.compare_to_noncausal_regression">
+<code class="sig-name descname"><span class="pre">compare_to_noncausal_regression</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.compare_to_noncausal_regression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints a comparison of the causal estimate to a noncausal linear regression estimate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_cols</strong> – A set of columns to be used in the linear regression.</p></li>
+<li><p><strong>drop_cols</strong> – Optional; A boolean indicating if input_cols should indicate which columns
+to drop instead of which columns to use. Defaults to False.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.delete_variable">
+<code class="sig-name descname"><span class="pre">delete_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.delete_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a variable from the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – A string indicating the name of the target variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.erase_quick_results">
+<code class="sig-name descname"><span class="pre">erase_quick_results</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.erase_quick_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Erases stored results from quick analyses.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.estimate_effect">
+<code class="sig-name descname"><span class="pre">estimate_effect</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.estimate_effect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the causal effect from the statistical estimand and the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method_name</strong> – The name of the estimation method to be used.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed. Defaults
+to True.</p></li>
+<li><p><strong>**kwargs</strong> – Advanced parameters for the analysis. Please refer to
+<a class="reference external" href="https://microsoft.github.io/dowhy/">https://microsoft.github.io/dowhy/</a> for more information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.generate_pdf_report">
+<code class="sig-name descname"><span class="pre">generate_pdf_report</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(300,</span> <span class="pre">300)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.generate_pdf_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a pdf report with the causal graph and all results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dpi</strong> – Optional; A pair indicating the resolution. Defaults to (300, 300).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.get_quick_result_estimate">
+<code class="sig-name descname"><span class="pre">get_quick_result_estimate</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimand_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.get_quick_result_estimate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a stored estimated effect.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment</strong> – A string indicating the name of the treatment variable.</p></li>
+<li><p><strong>outcome</strong> – A string indicating the name of the outcome variable.</p></li>
+<li><p><strong>estimand_type</strong> – A string indicating the type of causal effect.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.identify_estimand">
+<code class="sig-name descname"><span class="pre">identify_estimand</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.identify_estimand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algebraically identifies a statistical estimand for the causal effect from the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed. Defaults
+to True.</p></li>
+<li><p><strong>**kwargs</strong> – Advanced parameters for the analysis. Please refer to
+<a class="reference external" href="https://microsoft.github.io/dowhy/">https://microsoft.github.io/dowhy/</a> for more information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.imitate_data_trafos">
+<code class="sig-name descname"><span class="pre">imitate_data_trafos</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.imitate_data_trafos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imitates all the preprocessing steps applied before causal discovery.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vals_list</strong> – A list containing one column of values for each ‘add_variable’ step in the
+transformations. Defaults to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.initialize_model">
+<code class="sig-name descname"><span class="pre">initialize_model</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimand_type</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.initialize_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the causal model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment</strong> – A string indicating the name of the treatment variable.</p></li>
+<li><p><strong>outcome</strong> – A string indicating the name of the outcome variable.</p></li>
+<li><p><strong>estimand_type</strong> – A string indicating the type of causal effect.</p></li>
+<li><p><strong>**kwargs</strong> – Advanced parameters for the analysis. Please refer to
+<a class="reference external" href="https://microsoft.github.io/dowhy/">https://microsoft.github.io/dowhy/</a> for more information.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.normalize_variable">
+<code class="sig-name descname"><span class="pre">normalize_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.normalize_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces a variable by its z-scores.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – A string indicating the name of the target variable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.normalize_variables">
+<code class="sig-name descname"><span class="pre">normalize_variables</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.normalize_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces data for all variables by their z-scores.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.read_csv">
+<code class="sig-name descname"><span class="pre">read_csv</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.read_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data from a csv file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.read_parquet">
+<code class="sig-name descname"><span class="pre">read_parquet</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.read_parquet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data rom a parquet file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.rename_variable">
+<code class="sig-name descname"><span class="pre">rename_variable</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.rename_variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Renames a variable in the data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current_name</strong> – A string indicating the current name of the variable.</p></li>
+<li><p><strong>new_name</strong> – A string indicating the desired new name of the variable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.run_all_quick_analyses">
+<code class="sig-name descname"><span class="pre">run_all_quick_analyses</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimand_types</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['nonparametric-ate',</span> <span class="pre">'nonparametric-nde',</span> <span class="pre">'nonparametric-nie']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_heatmaps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_validation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_largest_effects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_pdf_report</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.run_all_quick_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs all possible quick causal anlyses with preset parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>estimand_types</strong> – A list of strings indicating the types of causal effects.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed for each
+analysis. Defaults to False.</p></li>
+<li><p><strong>show_tables</strong> – Optional; A boolean indicating if the resulting causal estimates should be
+displayed in tabular form. Defaults to True.</p></li>
+<li><p><strong>show_heatmaps</strong> – Optional; A boolean indicating if the resulting causal estimates should
+be displayed and saved in heatmap form. Defaults to True.</p></li>
+<li><p><strong>show_validation</strong> – Optional; A boolean indicating if the resulting causal estimates should
+be compared to previous expectations. Defaults to True.</p></li>
+<li><p><strong>show_largest_effects</strong> – Optional; A boolean indicating if the largest causal effects should
+be listed. Defaults to True.</p></li>
+<li><p><strong>generate_pdf_report</strong> – Optional; A boolean indicating if the causal graph, heatmaps,
+validations and estimates should be written to files and combined into a pdf.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.run_multiple_quick_analyses">
+<code class="sig-name descname"><span class="pre">run_multiple_quick_analyses</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcomes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimand_types</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_tables</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_heatmaps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_validation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_largest_effects</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generate_pdf_report</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.run_multiple_quick_analyses" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs multiple quick causal analyses with preset parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatments</strong> – A list of strings indicating the names of the treatment variables.</p></li>
+<li><p><strong>outcomes</strong> – A list of strings indicating the names of the outcome variables.</p></li>
+<li><p><strong>estimand_types</strong> – A list of strings indicating the types of causal effects.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed for each
+analysis. Defaults to False.</p></li>
+<li><p><strong>show_tables</strong> – Optional; A boolean indicating if the resulting causal estimates should be
+displayed in tabular form. Defaults to True.</p></li>
+<li><p><strong>show_heatmaps</strong> – Optional; A boolean indicating if the resulting causal estimates should
+be displayed and saved in heatmap form. Defaults to True.</p></li>
+<li><p><strong>show_validation</strong> – Optional; A boolean indicating if the resulting causal estimates should
+be compared to previous expectations. Defaults to True.</p></li>
+<li><p><strong>show_largest_effects</strong> – Optional; A boolean indicating if the largest causal effects should
+be listed. Defaults to True.</p></li>
+<li><p><strong>generate_pdf_report</strong> – Optional; A boolean indicating if the causal graph, heatmaps,
+validations and estimates should be written to files and combined into a pdf.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.run_quick_analysis">
+<code class="sig-name descname"><span class="pre">run_quick_analysis</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimand_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">robustness_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.run_quick_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a quick causal analysis with preset parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment</strong> – A string indicating the name of the treatment variable.</p></li>
+<li><p><strong>outcome</strong> – A string indicating the name of the outcome variable.</p></li>
+<li><p><strong>estimand_type</strong> – A string indicating the type of causal effect.</p></li>
+<li><p><strong>robustness_method</strong> – Optional; A string indicating the robustness check to be used.
+Defaults to None.</p></li>
+<li><p><strong>verbose</strong> – Optional; A boolean indicating if verbose output should be displayed. Defaults
+to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – ‘estimand_type must be nonparametric-ate, nonparametric-nde
+    or nonparametric-nie’</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.show_heatmaps">
+<code class="sig-name descname"><span class="pre">show_heatmaps</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.show_heatmaps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows heatmaps for strengths of causal effects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>save</strong> – Optional; A boolean indicating if the result should be saved to png.
+Defaults to True.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.show_largest_effects">
+<code class="sig-name descname"><span class="pre">show_largest_effects</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimand_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_results</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.show_largest_effects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows the largest causal effects in decreasing order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>estimand_type</strong> – A string indicating the type of causal effect.</p></li>
+<li><p><strong>n_results</strong> – Optional; An integer indicating the number of effects to be shown.
+Defaults to 10.</p></li>
+<li><p><strong>save</strong> – Optional; A boolean indicating if the result should be saved to png.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.show_quick_result_methods">
+<code class="sig-name descname"><span class="pre">show_quick_result_methods</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">treatment</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outcome</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimand_type</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.show_quick_result_methods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows methodic information about the result of a quick analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>treatment</strong> – A string indicating the name of the treatment variable.</p></li>
+<li><p><strong>outcome</strong> – A string indicating the name of the outcome variable.</p></li>
+<li><p><strong>estimand_type</strong> – A string indicating the type of causal effect.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.show_quick_results">
+<code class="sig-name descname"><span class="pre">show_quick_results</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.show_quick_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all results from quick analyses in tabular form.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.Estimator.show_validation">
+<code class="sig-name descname"><span class="pre">show_validation</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.Estimator.show_validation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows if selected estimated effects match previous expectations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>save</strong> – Optional; A boolean indicating if the result should be saved to png.
+Defaults to True.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="estimator.EstimatorDatabricks">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">estimator.</span></code><code class="sig-name descname"><span class="pre">EstimatorDatabricks</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validation_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.EstimatorDatabricks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for estimating causal effects on a Databricks cluster.</p>
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.paths">
+<code class="sig-name descname"><span class="pre">paths</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>A cause2e.PathManager managing paths and file names.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.data">
+<code class="sig-name descname"><span class="pre">data</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>A pandas.Dataframe containing the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.transformations">
+<code class="sig-name descname"><span class="pre">transformations</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.transformations" title="Permalink to this definition">¶</a></dt>
+<dd><p>A list storing all the performed preprocessing transformations. Ensures
+that the data fits the causal graph.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.variables">
+<code class="sig-name descname"><span class="pre">variables</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set containing the names of all variables in the data.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.model">
+<code class="sig-name descname"><span class="pre">model</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_model.CausalModel that can identify, estimate and refute causal
+effects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.treatment">
+<code class="sig-name descname"><span class="pre">treatment</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.treatment" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent treatment variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.outcome">
+<code class="sig-name descname"><span class="pre">outcome</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.outcome" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent outcome variable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.estimand_type">
+<code class="sig-name descname"><span class="pre">estimand_type</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.estimand_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string indicating the most recent type of causal effect.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.estimand">
+<code class="sig-name descname"><span class="pre">estimand</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.estimand" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_identifier.IdentifiedEstimand indicating the most recent estimand.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.estimated_effect">
+<code class="sig-name descname"><span class="pre">estimated_effect</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.estimated_effect" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_estimator.CausalEstimate indicating the most recent
+estimated effect.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.robustness_info">
+<code class="sig-name descname"><span class="pre">robustness_info</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.robustness_info" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dowhy.causal_refuter.CausalRefutation indicating the results of the most
+recent robustness check.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.spark">
+<code class="sig-name descname"><span class="pre">spark</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.spark" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional; A pyspark.sql.SparkSession in case you want to use spark. Defaults to
+None.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="estimator.EstimatorDatabricks.str_report">
+<code class="sig-name descname"><span class="pre">str_report</span></code><a class="headerlink" href="#estimator.EstimatorDatabricks.str_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>A string that is used to show the pdf report.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="estimator.EstimatorDatabricks.generate_pdf_report">
+<code class="sig-name descname"><span class="pre">generate_pdf_report</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dpi</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(300,</span> <span class="pre">300)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#estimator.EstimatorDatabricks.generate_pdf_report" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a pdf report with the causal graph and all results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dpi</strong> – Optional; A pair indicating the resolution. Defaults to (300, 300).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<span class="target" id="module-knowledge"></span><div class="section" id="knowledge-py">
+<h2>knowledge.py<a class="headerlink" href="#knowledge-py" title="Permalink to this headline">¶</a></h2>
+<p>This module handles domain knowledge representation and verification.</p>
+<p>It transforms knowledge about the data generating process into constraints on the edges of the
+causal graph. It also verifies if a given causal graph respects a set of domain knowledge
+constraints.</p>
+<dl class="py class">
+<dt id="knowledge.EdgeCreator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">knowledge.</span></code><code class="sig-name descname"><span class="pre">EdgeCreator</span></code><a class="headerlink" href="#knowledge.EdgeCreator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for creating required and forbidden edges from domain knowledge.</p>
+<dl class="py attribute">
+<dt id="knowledge.EdgeCreator.forbidden_edges">
+<code class="sig-name descname"><span class="pre">forbidden_edges</span></code><a class="headerlink" href="#knowledge.EdgeCreator.forbidden_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of edges that must not appear in the causal graph.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="knowledge.EdgeCreator.required_edges">
+<code class="sig-name descname"><span class="pre">required_edges</span></code><a class="headerlink" href="#knowledge.EdgeCreator.required_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of edges that must appear in the causal graph.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forbid_edge">
+<code class="sig-name descname"><span class="pre">forbid_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forbid_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forbids an edge between two nodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the source node of the forbidden edge.</p></li>
+<li><p><strong>destination</strong> – A string indicating the destination node of the forbidden edge.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forbid_edges">
+<code class="sig-name descname"><span class="pre">forbid_edges</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forbid_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forbids multiple edges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>edges</strong> – A set of edges.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forbid_edges_from_groups">
+<code class="sig-name descname"><span class="pre">forbid_edges_from_groups</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incoming</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outgoing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exceptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forbid_edges_from_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forbids edges between groups of variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> – A set containing variables.</p></li>
+<li><p><strong>incoming</strong> – Optional; a set containing all variables that cannot affect variables
+in ‘group’. Defaults to None.</p></li>
+<li><p><strong>outgoing</strong> – Optional; a set containing all variables that cannot be affected by
+variables in ‘group’. Defaults to None.</p></li>
+<li><p><strong>exceptions</strong> – Optional; a set of edges that should not be forbidden even if the group
+structure entails it. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forbid_edges_from_temporal">
+<code class="sig-name descname"><span class="pre">forbid_edges_from_temporal</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temporal_order</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forbid_edges_from_temporal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds all pairs of variables such that the first variable cannot causally affect the second
+variable for temporal reasons.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>temporal_order</strong> – A list of variable sets indicating the temporal order in which the
+variables were generated. This is used to infer forbidden edges since the future
+cannot cause the past.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forbid_edges_within_group">
+<code class="sig-name descname"><span class="pre">forbid_edges_within_group</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forbid_edges_within_group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forbids edges within one group of variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>group</strong> – A set containing variables that cannot affect each other.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.forget_edges">
+<code class="sig-name descname"><span class="pre">forget_edges</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.forget_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forgets all the previously created edges to allow a new start.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.require_edge">
+<code class="sig-name descname"><span class="pre">require_edge</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.require_edge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires an edge between two nodes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – A string indicating the source node of the required edge.</p></li>
+<li><p><strong>destination</strong> – A string indicating the destination node of the required edge.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.require_edges">
+<code class="sig-name descname"><span class="pre">require_edges</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.require_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires multiple edges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>edges</strong> – A set of edges.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.require_edges_from_groups">
+<code class="sig-name descname"><span class="pre">require_edges_from_groups</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">incoming</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outgoing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exceptions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.require_edges_from_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires edges between groups of variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>group</strong> – A set containing variables.</p></li>
+<li><p><strong>incoming</strong> – Optional; a set containing all variables that must affect variables
+in ‘group’. Defaults to None.</p></li>
+<li><p><strong>outgoing</strong> – Optional; a set containing all variables that must be affected by
+variables in ‘group’. Defaults to None.</p></li>
+<li><p><strong>exceptions</strong> – Optional; a set of edges that should not be required even if the group
+structure entails it. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.EdgeCreator.show_edges">
+<code class="sig-name descname"><span class="pre">show_edges</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.EdgeCreator.show_edges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shows all currently required/forbidden edges.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="knowledge.KnowledgeChecker">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">knowledge.</span></code><code class="sig-name descname"><span class="pre">KnowledgeChecker</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">edges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">knowledge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.KnowledgeChecker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for checking that a causal graph respects constraints from domain knowledge.</p>
+<dl class="py attribute">
+<dt id="knowledge.KnowledgeChecker.existing">
+<code class="sig-name descname"><span class="pre">existing</span></code><a class="headerlink" href="#knowledge.KnowledgeChecker.existing" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of all edges that exist in the causal graph under consideration.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="knowledge.KnowledgeChecker.forbidden">
+<code class="sig-name descname"><span class="pre">forbidden</span></code><a class="headerlink" href="#knowledge.KnowledgeChecker.forbidden" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of all edges that contradict domain knowledge.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="knowledge.KnowledgeChecker.required">
+<code class="sig-name descname"><span class="pre">required</span></code><a class="headerlink" href="#knowledge.KnowledgeChecker.required" title="Permalink to this definition">¶</a></dt>
+<dd><p>A set of all edges that must exist according to domain knowledge.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.KnowledgeChecker.respects_forbidden">
+<code class="sig-name descname"><span class="pre">respects_forbidden</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.KnowledgeChecker.respects_forbidden" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if no forbidden edges are present, else raises Assertion error.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.KnowledgeChecker.respects_knowledge">
+<code class="sig-name descname"><span class="pre">respects_knowledge</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.KnowledgeChecker.respects_knowledge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a boolean indicating if all domain knowledge is respected.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="knowledge.KnowledgeChecker.respects_required">
+<code class="sig-name descname"><span class="pre">respects_required</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#knowledge.KnowledgeChecker.respects_required" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if all required edges are present, else raises Assertion error.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="knowledge.ValidationCreator">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">knowledge.</span></code><code class="sig-name descname"><span class="pre">ValidationCreator</span></code><a class="headerlink" href="#knowledge.ValidationCreator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main class for recording expectations about causal effects that are validated after estimation.</p>
+<dl class="py attribute">
+<dt id="knowledge.ValidationCreator.expected_effects">
+<code class="sig-name descname"><span class="pre">expected_effects</span></code><a class="headerlink" href="#knowledge.ValidationCreator.expected_effects" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dictionary containing expected quantitative causal effects. This is
+evaluated after estimation of the effects.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">cause2e</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Daniel Gruenbaum.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
