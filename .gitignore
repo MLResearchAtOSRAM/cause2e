@@ -9,3 +9,4 @@ causal_model.png
 test_notebook.ipynb
 .coverage
 *sphinx_config/_build
+/tests/output
