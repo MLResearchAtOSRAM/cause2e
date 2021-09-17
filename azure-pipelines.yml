@@ -9,7 +9,7 @@ trigger:
       - '*'
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
 
 strategy:
   matrix:
