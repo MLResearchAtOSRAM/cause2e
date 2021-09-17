@@ -120,7 +120,7 @@ class TestFullAnalysis(unittest.TestCase):
         validation_creator = self._create_validation_knowledge()
         self.learner.set_knowledge(edge_creator=edge_creator, validation_creator=validation_creator, show=False)
         self.learner.run_quick_search(verbose=False, keep_vm=False, show_graph=False)
-        # self.learner.run_all_quick_analyses()
+        self.learner.run_all_quick_analyses()
 
     def _read_data(self, variables):
         self.learner.read_csv(index_col=0)
