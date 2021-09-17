@@ -50,6 +50,20 @@ steps:
     codeCoverageTool: Cobertura
     summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
 
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)/tests/output'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    Contents: '**'
+  displayName: 'Copy output files from end-to-end test to artifact directory'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'output end-to-end test'
+    publishLocation: 'Container'
+  displayName: 'Publish output files as artifact'
+
 - script: pip install --upgrade sphinx
   displayName: 'Install sphinx'
 
