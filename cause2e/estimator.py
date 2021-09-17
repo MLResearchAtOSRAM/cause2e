@@ -212,7 +212,7 @@ class Estimator():
         self.erase_quick_results()
         vars = self.variables
         self.run_multiple_quick_analyses(vars, vars, estimand_types, verbose, show_tables, show_heatmaps,
-                                         show_validation, generate_pdf_report)
+                                         show_validation, show_largest_effects, generate_pdf_report)
 
     def run_multiple_quick_analyses(self,
                                     treatments,
@@ -418,6 +418,8 @@ class Estimator():
             generate_pdf_report: A boolean indicating if the causal graph, heatmaps,
                 validations and estimates should be written to files and combined into a pdf.
         """
+        if show_tables or generate_pdf_report:
+            self.show_quick_results(save=generate_pdf_report)
         if show_heatmaps or generate_pdf_report:
             self.show_heatmaps(save=generate_pdf_report)
         if show_validation or generate_pdf_report:
@@ -425,8 +427,6 @@ class Estimator():
         if show_largest_effects or generate_pdf_report:
             for estimand_type in estimand_types:
                 self.show_largest_effects(estimand_type, save=generate_pdf_report)
-        if show_tables or generate_pdf_report:
-            self.show_quick_results(save=generate_pdf_report)
         if generate_pdf_report:
             self.generate_pdf_report()
 
