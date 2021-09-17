@@ -122,6 +122,7 @@ class TestFullAnalysis(unittest.TestCase):
         self.learner.run_quick_search(verbose=False, keep_vm=False, show_graph=False)
         self.learner.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.learner.run_all_quick_analyses()
+        print(self.learner._estimator._result_mgr._validation_dict)
 
     def _read_data(self, variables):
         self.learner.read_csv(index_col=0)
@@ -132,12 +133,8 @@ class TestFullAnalysis(unittest.TestCase):
 
     def _create_graph_knowledge(self):
         edge_creator = knowledge.EdgeCreator()
-        edge_creator.forbid_edges_from_groups({'Season_binary'}, incoming=self.learner.variables)
+        edge_creator.forbid_edges_from_groups({'Season'}, incoming=self.learner.variables)
         edge_creator.forbid_edges_from_groups({'Slippery'}, outgoing=self.learner.variables)
-        edge_creator.require_edge('Season', 'Sprinkler')
-        edge_creator.require_edge('Season', 'Rain')
-        edge_creator.require_edge('Rain', 'Wet')
-        # original ones
         edge_creator.require_edge('Sprinkler', 'Wet')
         edge_creator.forbid_edge('Sprinkler', 'Rain')
         return edge_creator
@@ -147,7 +144,7 @@ class TestFullAnalysis(unittest.TestCase):
         validation_creator.add_expected_effect(('Sprinkler', 'Wet', 'nonparametric-ate'), ('greater', 0))
         validation_creator.add_expected_effect(('Wet', 'Slippery', 'nonparametric-ate'), ('greater', 0))
         validation_creator.add_expected_effect(('Sprinkler', 'Rain', 'nonparametric-nde'), ('less', 0))
-        validation_creator.add_expected_effect(('Slippery', 'Season_binary', 'nonparametric-nie'), ('between', 0.2, 0.4))
+        validation_creator.add_expected_effect(('Slippery', 'Season', 'nonparametric-nie'), ('between', 0.2, 0.4))
         return validation_creator
 
 
