@@ -27,12 +27,7 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    setx JDK_HOME C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
-  displayName: 'Set jdk_home manually for javabridge installation'
-
-- script: |
-    setx JDK_HOME C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
-    sudo apt install graphviz
+    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
