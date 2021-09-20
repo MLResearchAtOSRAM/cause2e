@@ -29,39 +29,7 @@ steps:
 - script: |
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     dir %JDK_HOME%
-    python -m pip install --upgrade pip
-    pip install javabridge
-  displayName: 'Set jdk_home manually'
-
-- script: |
-    cd
-    dir
-    set
-    set hello=lala
-    set
-    set hello=
-    set
-
-- script: |
-    python -m pip install --upgrade pip
-    choco uninstall kotlinc -y
-    choco uninstall openjdk -y
-    set java_home
-    java -version
-  displayName: 'Uninstall jdk'
-
-- script: |
-    set java_home
-    java -version
-    choco install openjdk8 --force
-  displayName: 'Install jdk'
-
-- script: |
-    set java_home
-    java -version
-    pip install javabridge
-    pip install git+git://github.com/bd2kccd/py-causal
-  displayName: 'Install javabridge'
+  displayName: 'Set jdk_home manually for javabridge'
 
 - script: |
     sudo apt install graphviz
