@@ -27,7 +27,7 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8
+    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     dir %JDK_HOME%
     python -m pip install --upgrade pip
     pip install javabridge
