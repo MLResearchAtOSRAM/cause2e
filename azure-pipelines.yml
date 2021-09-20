@@ -30,10 +30,22 @@ steps:
     python -m pip install --upgrade pip
     choco uninstall kotlinc -y
     choco uninstall openjdk -y
+    set java_home
+    java -version
+  displayName: 'Uninstall jdk'
+
+- script: |
+    set java_home
     java -version
     choco install openjdk8 --force
+  displayName: 'Install jdk'
+
+- script: |
+    set java_home
+    java -version
+    pip install javabridge
     pip install git+git://github.com/bd2kccd/py-causal
-  displayName: 'Install jdk and javabridge'
+  displayName: 'Install javabridge'
 
 - script: |
     sudo apt install graphviz
