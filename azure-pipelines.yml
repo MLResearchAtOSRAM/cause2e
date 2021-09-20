@@ -27,7 +27,7 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    setx JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
+    setx JDK_HOME C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
   displayName: 'Set jdk_home manually for javabridge installation'
 
 - script: |
