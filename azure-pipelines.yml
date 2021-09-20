@@ -35,8 +35,7 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    pip install pytest
-    python -m pytest tests
+    python -m unittest tests.test_discovery.TestFullAnalysis
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
