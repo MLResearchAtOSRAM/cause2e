@@ -35,7 +35,7 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    python -m unittest tests.test_discovery.TestFullAnalysis
+    python -m pytest tests/test_discovery.py::TestFullAnalysis
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
