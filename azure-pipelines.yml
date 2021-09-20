@@ -31,6 +31,7 @@ steps:
   displayName: 'Set jdk_home manually for javabridge installation'
 
 - script: |
+    setx JDK_HOME C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     sudo apt install graphviz
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
