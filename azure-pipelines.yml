@@ -27,6 +27,15 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
+    cd
+    dir
+    set
+    set hello=lala
+    set
+    set hello=
+    set
+
+- script: |
     python -m pip install --upgrade pip
     choco uninstall kotlinc -y
     choco uninstall openjdk -y
