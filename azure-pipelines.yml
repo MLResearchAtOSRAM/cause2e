@@ -28,9 +28,7 @@ steps:
 
 - script: |
     python -m pip install --upgrade pip
-    choco uninstall openjdk -y
-    choco install openjdk8 --force
-    pip install javabridge==1.0.19
+    pip install javabridge==1.0.15
     pip install git+git://github.com/bd2kccd/py-causal
   displayName: 'Install jdk and javabridge'
 
