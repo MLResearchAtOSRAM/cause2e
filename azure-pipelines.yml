@@ -27,6 +27,13 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
+    python -m pip install --upgrade pip
+    choco install openjdk
+    pip install javabridge==1.0.19
+    pip install git+git://github.com/bd2kccd/py-causal
+  displayName: 'Install jdk and javabridge'
+
+- script: |
     sudo apt install graphviz
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
@@ -34,7 +41,6 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    pip install git+https://github.com/LeeKamentsky/python-javabridge.git
     pip install pytest pytest-azurepipelines
     pip install pytest-cov
     python -m pytest --junitxml=junit/test-results.xml --cov=cause2e --cov-report=xml tests
