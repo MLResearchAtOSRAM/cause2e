@@ -6,10 +6,10 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="cause2e",
-    version="0.1.3",
+    version="0.2.0",
     author="Daniel Gruenbaum",
-    author_email="daniel.gruenbaum@osram-os.com",
-    description="A package for end to end causal analysis",
+    author_email="daniel.gruenbaum@ams-osram.com",
+    description="A package for end-to-end causal analysis",
     license="MIT",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -20,7 +20,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=[
         "dowhy",
         "graphviz",
