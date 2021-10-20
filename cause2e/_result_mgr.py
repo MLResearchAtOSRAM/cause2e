@@ -394,7 +394,7 @@ class _QueryManager:
                 where the dataframe should be saved. Defaults to None.
         """
         largest_effects = self._get_largest_effects(estimand_type, n_results)
-        title = f"{n_results} Largest {_HeatmapManager._select_title(estimand_type)}:"
+        title = f"{len(largest_effects)} Largest {_HeatmapManager._select_title(estimand_type)}:"
         print(title)
         print(largest_effects)
         print("\n================================\n")
@@ -778,7 +778,6 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
         loc: Optional; A string indicating the desired location of the dataframe in the png.
             Defaults to 'upper left'.
     """
-    df, title = df, title
     plt.ioff()
     fig, ax = plt.subplots(figsize=(3, 5))
     fig.patch.set_visible(False)
