@@ -1,11 +1,22 @@
 [![Build Status](https://dev.azure.com/OsramDS/cause2e_github/_apis/build/status/MLResearchAtOSRAM.cause2e?branchName=main)](https://dev.azure.com/OsramDS/cause2e_github/_build/latest?definitionId=24&branchName=main)
 
+## Getting started:
+The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality are also provided.
+
 ## Overview:
 The cause2e package provides tools for performing an **end-to-end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
 - learn a graphical causal model of the data generating process
 - identify a statistical estimand for the causal effect that one variable has on another variable
 - estimate the effect with various statistical techniques
 - check the robustness of your results with respect to changes in the causal model
+
+For **analyzing the whole system at once** after learning the causal graph, you can use a single command to
+- visualize your qualitative domain knowledge
+- estimate all possible direct, indirect and overall causal effects between your variables via do-calculus-backed linear regression
+- receive a ranking of the strongest causal effects
+- visualize all causal effects in heatmaps
+- validate your model against a priori known quantitative causal effects
+- receive a pdf report containing all relevant information
 
 The main contribution of cause2e is the integration of two established causal packages that have currently been separated and cumbersome to combine:
 - **Causal discovery methods** from the *py-causal* package [1], which is a Python wrapper around parts of the Java *TETRAD* software. It provides many algorithms for learning the causal graph from data and domain knowledge.
@@ -22,6 +33,7 @@ cause2e provides an **easy to use API** for performing an end-to-end causal anal
     - read and preprocess data
     - accept domain knowledge in a simple data format
     - learn the causal graph using *py-causal* algorithms
+    - visualize the causal graph and the influence of the specified domain knowledge on the result
     - manually postprocess the resulting graph in case you want to add, delete or reverse some edges
     - check if the graph is acyclic and respects the domain knowledge
     - save the graph to various file formats
@@ -31,10 +43,7 @@ cause2e provides an **easy to use API** for performing an end-to-end causal anal
     - load the causal graph that was saved by the StructureLearner
     - perform the above mentioned causal reasoning steps suggested by the *DoWhy* package
 
-Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge and generating synthetic data for benchmarking.
-
-## Getting started:
-The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality are also provided.
+Additonally, cause2e offers helper classes for handling all paths to your data and output, representing domain knowledge, as well as bookkeeping, ranking, visualization and validation of the results of a multi-effect analysis.
 
 ## Documentation:
 For a detailed documentation of the package, please refer to [mlresearchatosram.github.io/cause2e](https://mlresearchatosram.github.io/cause2e).
@@ -59,6 +68,8 @@ pip install numpy -U
 pip install pandas -U
 pip install git+git://github.com/MLResearchAtOSRAM/cause2e
 ```
+
+Afterwards, try to run the [minimal example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb) to check that everything works.
 
 If you want to clone the repository into a folder for development on your local machine, please navigate to the folder and run:
 ```
