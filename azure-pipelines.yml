@@ -44,11 +44,13 @@ steps:
   inputs:
     testResultsFiles: '**/test-*.xml'
     testRunTitle: 'Publish test results for Python $(python.version)'
+  displayName: 'Publish test results'
 
 - task: PublishCodeCoverageResults@1
   inputs:
     codeCoverageTool: Cobertura
     summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+  displayName: 'Publish coverage results'
 
 - task: CopyFiles@2
   inputs:
