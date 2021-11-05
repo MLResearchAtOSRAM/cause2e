@@ -125,7 +125,7 @@ class TestFullAnalysis(unittest.TestCase):
         # self.learner._estimator.run_quick_analysis('Season', 'Slippery', 'nonparametric-ate')
         self.learner._estimator.run_multiple_quick_analyses(['Season', 'Wet'],
                                                             ['Wet', 'Slippery'],
-                                                            ['nonparametric-ate', 'nonparametric-nde'],
+                                                            ['nonparametric-ate', 'nonparametric-nde', 'nonparametric-nie'],
                                                             verbose=True,
                                                             show_tables=True,
                                                             show_heatmaps=False,
