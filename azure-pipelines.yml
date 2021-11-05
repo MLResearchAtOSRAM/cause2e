@@ -8,17 +8,29 @@ trigger:
     include:
       - '*'
 
-pool:
-  vmImage: 'ubuntu-latest'
-
 strategy:
   matrix:
-    Python37:
+    WindowsPython37:
+      os.version: 'windows-latest'
       python.version: '3.7'
-    Python38:
+    WindowsPython38:
+      os.version: 'windows-latest'
       python.version: '3.8'
-    Python39:
+    WindowsPython39:
+      os.version: 'windows-latest'
       python.version: '3.9'
+    LinuxPython37:
+      os.version: 'ubuntu-latest'
+      python.version: '3.7'
+    LinuxPython38:
+      os.version: 'ubuntu-latest'
+      python.version: '3.8'
+    LinuxPython39:
+      os.version: 'ubuntu-latest'
+      python.version: '3.9'
+
+pool:
+  vmImage: '$(os.version)'
 
 steps:
 - task: UsePythonVersion@0
@@ -27,11 +39,21 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
+    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.312-7\x64
+    choco install graphviz
+    python -m pip install --upgrade pip
+    pip install git+git://github.com/bd2kccd/py-causal
+    pip install -r requirements.txt
+  condition: eq(variables['os.version'], 'windows-latest')
+  displayName: 'Install dependencies (windows)'
+
+- script: |
     sudo apt install graphviz
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
-  displayName: 'Install dependencies'
+  condition: eq(variables['os.version'], 'ubuntu-latest')
+  displayName: 'Install dependencies (linux)'
 
 - script: |
     pip install pytest pytest-azurepipelines
@@ -40,15 +62,16 @@ steps:
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
-  condition: succeededOrFailed()
   inputs:
     testResultsFiles: '**/test-*.xml'
     testRunTitle: 'Publish test results for Python $(python.version)'
+  displayName: 'Publish test results'
 
 - task: PublishCodeCoverageResults@1
   inputs:
     codeCoverageTool: Cobertura
     summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+  displayName: 'Publish coverage results'
 
 - task: CopyFiles@2
   inputs:

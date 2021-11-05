@@ -298,7 +298,7 @@ class StructureLearner():
                 True.
             show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
-            show_graph: A boolean indicating if the resulting graph should be saved. Defaults to
+            save_graph: A boolean indicating if the resulting graph should be saved. Defaults to
                 True.
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
