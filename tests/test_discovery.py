@@ -123,18 +123,18 @@ class TestFullAnalysis(unittest.TestCase):
         self.learner.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.learner._create_estimator()
         # self.learner._estimator.run_quick_analysis('Season', 'Slippery', 'nonparametric-ate')
-        vars = list(self.learner.variables)
-        self.learner._estimator.run_multiple_quick_analyses(vars,
-                                                            vars,
-                                                            ['nonparametric-ate', 'nonparametric-nde', 'nonparametric-nie'],
-                                                            verbose=True,
-                                                            show_tables=True,
-                                                            show_heatmaps=True,
-                                                            show_validation=True,
-                                                            show_largest_effects=True,
-                                                            generate_pdf_report=False
-                                                            )
-        # self.learner.run_all_quick_analyses(generate_pdf_report=False)
+        # vars = list(self.learner.variables)
+        # self.learner._estimator.run_multiple_quick_analyses(vars,
+        #                                                     vars,
+        #                                                     ['nonparametric-ate', 'nonparametric-nde', 'nonparametric-nie'],
+        #                                                     verbose=True,
+        #                                                     show_tables=True,
+        #                                                     show_heatmaps=True,
+        #                                                     show_validation=True,
+        #                                                     show_largest_effects=True,
+        #                                                     generate_pdf_report=False
+        #                                                     )
+        self.learner.run_all_quick_analyses()
 
     def _read_data(self, variables):
         self.learner.read_csv(index_col=0)
