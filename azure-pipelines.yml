@@ -8,17 +8,29 @@ trigger:
     include:
       - '*'
 
-pool:
-  vmImage: 'windows-latest'
-
 strategy:
   matrix:
-    Python37:
+    WindowsPython37:
+      os.version: 'windows-latest'
       python.version: '3.7'
-    Python38:
+    WindowsPython38:
+      os.version: 'windows-latest'
       python.version: '3.8'
-    Python39:
+    WindowsPython39:
+      os.version: 'windows-latest'
       python.version: '3.9'
+    LinuxPython37:
+      os.version: 'ubuntu-latest'
+      python.version: '3.7'
+    LinuxPython38:
+      os.version: 'ubuntu-latest'
+      python.version: '3.8'
+    LinuxPython39:
+      os.version: 'ubuntu-latest'
+      python.version: '3.9'
+
+pool:
+  vmImage: '$(os.version)'
 
 steps:
 - task: UsePythonVersion@0
@@ -29,10 +41,18 @@ steps:
 - script: |
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.312-7\x64
     choco install graphviz
+  condition: eq('$(os.version)', 'windows-latest')
+  displayName: 'Prepare windows machine'
+
+- script: sudo apt install graphviz
+  condition: eq('$(os.version)', 'ubuntu-latest')
+  displayName: 'Prepare linux machine'
+
+- script: |
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
-  displayName: 'Install dependencies'
+  displayName: 'Install package dependencies'
 
 - script: |
     pip install pytest pytest-azurepipelines
@@ -41,7 +61,6 @@ steps:
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
-  condition: succeededOrFailed()
   inputs:
     testResultsFiles: '**/test-*.xml'
     testRunTitle: 'Publish test results for Python $(python.version)'
