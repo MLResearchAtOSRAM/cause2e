@@ -121,6 +121,8 @@ class TestFullAnalysis(unittest.TestCase):
         self.learner.set_knowledge(edge_creator=edge_creator, validation_creator=validation_creator, show=False)
         self.learner.run_quick_search(verbose=False, keep_vm=False, show_graph=False)
         self.learner.binarize_variable('Season', one_val='Spring', zero_val='Winter')
+        self.learner._create_estimator()
+        self.learner._estimator.run_quick_analysis('Season', 'Slippery', 'nonparametric-ate')
         # self.learner.run_all_quick_analyses(generate_pdf_report=False)
 
     def _read_data(self, variables):
