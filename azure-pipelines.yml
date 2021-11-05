@@ -35,7 +35,7 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    pip install pytest==4.6.1 --force-reinstall
+    pip install pytest
     python -X faulthandler -m pytest tests/test_discovery.py::TestFullAnalysis
   displayName: 'Run tests with pytest and check test coverage'
 
