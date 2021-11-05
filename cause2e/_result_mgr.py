@@ -495,13 +495,13 @@ class _HeatmapManager:
         plt.title(title, size=18)
         plt.ylabel("Treatment", size=15)
         plt.xlabel("Outcome", size=15)
-        plt.show()
-        # if save_to_name:
-        #     figure = heatmap.get_figure()
-        #     name = save_to_name + '_heatmap_' + estimand_type[-3:] + '.png'
-        #     figure.savefig(name, bbox_inches="tight", dpi=300)
-        #     self._save_quantitative_heatmap_as_png(estimand_type, save_to_name)
-        plt.clf()
+        # plt.show()
+        # # if save_to_name:
+        # #     figure = heatmap.get_figure()
+        # #     name = save_to_name + '_heatmap_' + estimand_type[-3:] + '.png'
+        # #     figure.savefig(name, bbox_inches="tight", dpi=300)
+        # #     self._save_quantitative_heatmap_as_png(estimand_type, save_to_name)
+        # plt.clf()
 
     def _save_quantitative_heatmap_as_png(self, estimand_type, save_to_name):
         """Saves the quick results dataframe to a png file.
