@@ -28,15 +28,11 @@ steps:
 
 - script: |
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.312-7\x64
+    choco install graphviz
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
   displayName: 'Install dependencies'
-
-- script : |
-    choco install graphviz
-  displayName: 'Install graphviz (put back into first install block after bugfix)'
-
 
 - script: |
     pip install pytest
