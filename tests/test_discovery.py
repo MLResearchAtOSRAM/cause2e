@@ -127,7 +127,7 @@ class TestFullAnalysis(unittest.TestCase):
                                                             ['Wet', 'Slippery'],
                                                             ['nonparametric-ate', 'nonparametric-nde'],
                                                             verbose=True,
-                                                            show_tables=False,
+                                                            show_tables=True,
                                                             show_heatmaps=False,
                                                             show_validation=False,
                                                             show_largest_effects=False,
