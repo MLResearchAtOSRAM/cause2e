@@ -27,9 +27,8 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    set
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
-    set
+    dir /s /b C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
