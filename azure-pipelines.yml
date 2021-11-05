@@ -27,6 +27,7 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
+    set
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.302-8\x64
     choco install graphviz
     python -m pip install --upgrade pip
