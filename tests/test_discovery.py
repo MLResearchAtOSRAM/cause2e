@@ -129,7 +129,7 @@ class TestFullAnalysis(unittest.TestCase):
                                                             ['nonparametric-ate', 'nonparametric-nde', 'nonparametric-nie'],
                                                             verbose=True,
                                                             show_tables=True,
-                                                            show_heatmaps=False,
+                                                            show_heatmaps=True,
                                                             show_validation=True,
                                                             show_largest_effects=True,
                                                             generate_pdf_report=False

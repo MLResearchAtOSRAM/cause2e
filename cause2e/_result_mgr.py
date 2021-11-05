@@ -501,6 +501,7 @@ class _HeatmapManager:
             name = save_to_name + '_heatmap_' + estimand_type[-3:] + '.png'
             figure.savefig(name, bbox_inches="tight", dpi=300)
             self._save_quantitative_heatmap_as_png(estimand_type, save_to_name)
+        plt.clf()
 
     def _save_quantitative_heatmap_as_png(self, estimand_type, save_to_name):
         """Saves the quick results dataframe to a png file.
