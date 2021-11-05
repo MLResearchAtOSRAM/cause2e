@@ -36,7 +36,7 @@ steps:
 
 - script: |
     pip install pytest==4.6.1 --force-reinstall
-    python -X faulthandler -m pytesttests/test_discovery.py::TestFullAnalysis
+    python -X faulthandler -m pytest tests/test_discovery.py::TestFullAnalysis
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
