@@ -122,7 +122,18 @@ class TestFullAnalysis(unittest.TestCase):
         self.learner.run_quick_search(verbose=False, keep_vm=False, show_graph=False)
         self.learner.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.learner._create_estimator()
-        self.learner._estimator.run_quick_analysis('Season', 'Slippery', 'nonparametric-ate')
+        # self.learner._estimator.run_quick_analysis('Season', 'Slippery', 'nonparametric-ate')
+        self.learner._estimator.run_multiple_quick_analyses(self,
+                                                            ['Season', 'Wet'],
+                                                            ['Wet', 'Slippery'],
+                                                            ['nonparametric-ate', 'nonparametric-nde'],
+                                                            verbose=False,
+                                                            show_tables=False,
+                                                            show_heatmaps=False,
+                                                            show_validation=False,
+                                                            show_largest_effects=False,
+                                                            generate_pdf_report=False
+                                                            )
         # self.learner.run_all_quick_analyses(generate_pdf_report=False)
 
     def _read_data(self, variables):
