@@ -129,8 +129,8 @@ class TestFullAnalysis(unittest.TestCase):
                                                             verbose=True,
                                                             show_tables=True,
                                                             show_heatmaps=False,
-                                                            show_validation=False,
-                                                            show_largest_effects=False,
+                                                            show_validation=True,
+                                                            show_largest_effects=True,
                                                             generate_pdf_report=False
                                                             )
         # self.learner.run_all_quick_analyses(generate_pdf_report=False)
