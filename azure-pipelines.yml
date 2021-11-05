@@ -41,18 +41,19 @@ steps:
 - script: |
     set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.312-7\x64
     choco install graphviz
-  condition: eq(variables['os.version'], 'windows-latest')
-  displayName: 'Prepare windows machine'
-
-- script: sudo apt install graphviz
-  condition: eq(variables['os.version'], 'ubuntu-latest')
-  displayName: 'Prepare linux machine'
-
-- script: |
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
-  displayName: 'Install package dependencies'
+  condition: eq(variables['os.version'], 'windows-latest')
+  displayName: 'Install dependencies (windows)'
+
+- script: |
+    sudo apt install graphviz
+    python -m pip install --upgrade pip
+    pip install git+git://github.com/bd2kccd/py-causal
+    pip install -r requirements.txt
+  condition: eq(variables['os.version'], 'ubuntu-latest')
+  displayName: 'Install dependencies (linux)'
 
 - script: |
     pip install pytest pytest-azurepipelines
