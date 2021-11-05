@@ -495,7 +495,7 @@ class _HeatmapManager:
         plt.title(title, size=18)
         plt.ylabel("Treatment", size=15)
         plt.xlabel("Outcome", size=15)
-        plt.show()
+        plt.show(block=False)
         if save_to_name:
             figure = heatmap.get_figure()
             name = save_to_name + '_heatmap_' + estimand_type[-3:] + '.png'
