@@ -36,7 +36,7 @@ steps:
 
 - script: |
     pip install pytest
-    python -X faulthandler -m pytest tests/test_discovery.py::TestFullAnalysis
+    python -m pytest tests/test_discovery.py::TestFullAnalysis
   displayName: 'Run tests with pytest and check test coverage'
 
 - task: PublishTestResults@2
