@@ -10,7 +10,6 @@ class EstimatorForTesting(Estimator):
         self.file_type = file_type
         self.dataset = dataset
         self.transformations = []
-        self.validation_dict = {}
         self.uses_spark = uses_spark
         self.spark = spark
         super().__init__(self.prepared_paths, self.transformations, self.validation_dict, self.prepared_spark)
@@ -53,12 +52,21 @@ class EstimatorForTesting(Estimator):
             return None
 
 
-class TestManualEstimation(unittest.TestCase):
+class EstimatorForSprinklerTesting(EstimatorForTesting):
+    def __init__(self, file_type='csv', uses_spark=False, spark=None):
+        super().__init__(file_type, 'sprinkler', uses_spark, spark)
+
+    def read_data(self):
+
+
+
+class TestEstimation(unittest.TestCase):
     def setUp(self):
         self.estimator = EstimatorForTesting(dataset='sprinkler')
+        variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
+        self._read_data(variables)
 
     def test_manual_estimation(self):
-        variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
         self._read_data(variables)
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.estimator.initialize_model('Rain', 'Slippery', 'nonparametric-ate')
@@ -67,21 +75,7 @@ class TestManualEstimation(unittest.TestCase):
         self.estimator.check_robustness(method_name="random_common_cause", verbose=True)
         self.estimator.compare_to_noncausal_regression(input_cols={'Rain', 'Sprinkler'})
 
-    def _read_data(self, variables):
-        self.estimator.read_csv(index_col=0)
-        self.assertFalse(self.estimator.data.empty)
-        self.assertEqual(self.estimator.variables, variables)
-        self.estimator.discrete = self.estimator.variables
-        self.estimator.continuous = set()
-
-
-class TestQuickEstimation(unittest.TestCase):
-    def setUp(self):
-        self.estimator = EstimatorForTesting(dataset='sprinkler')
-
     def test_quick_estimation(self):
-        variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
-        self._read_data(variables)
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.run_quick_analysis(treatment='Rain',
                                 outcome='Slippery',
