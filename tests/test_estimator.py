@@ -7,7 +7,7 @@ import os
 
 class EstimatorForTesting(Estimator):
     def __init__(self, file_type='csv', dataset='linear_test', uses_spark=False, spark=None):
-        parameters = ParameterPreparator(file_type='csv', dataset='linear_test', uses_spark=False, spark=None)
+        parameters = ParameterPreparator(file_type, dataset, uses_spark, spark)
         super().__init__(parameters.prepared_paths,
                          parameters.transformations,
                          parameters.validation_dict,
@@ -17,7 +17,7 @@ class EstimatorForTesting(Estimator):
 
 class EstimatorDatabricksForTesting(EstimatorDatabricks):
     def __init__(self, file_type='csv', dataset='linear_test', uses_spark=False, spark=None):
-        parameters = ParameterPreparator(file_type='csv', dataset='linear_test', uses_spark=False, spark=None)
+        parameters = ParameterPreparator(file_type, dataset, uses_spark, spark)
         super().__init__(parameters.prepared_paths,
                          parameters.prepared_spark,
                          parameters.transformations,
