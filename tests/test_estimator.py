@@ -52,22 +52,14 @@ class EstimatorForTesting(Estimator):
             return None
 
 
-class EstimatorForSprinklerTesting(EstimatorForTesting):
-    def __init__(self, file_type='csv', uses_spark=False, spark=None):
-        super().__init__(file_type, 'sprinkler', uses_spark, spark)
-
-    def read_data(self):
-
-
-
 class TestEstimation(unittest.TestCase):
     def setUp(self):
         self.estimator = EstimatorForTesting(dataset='sprinkler')
-        variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
-        self._read_data(variables)
+        self.variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
+        self._read_data(self.variables)
 
     def test_manual_estimation(self):
-        self._read_data(variables)
+        self._read_data(self.variables)
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.estimator.initialize_model('Rain', 'Slippery', 'nonparametric-ate')
         self.estimator.identify_estimand(verbose=True)
@@ -77,13 +69,27 @@ class TestEstimation(unittest.TestCase):
 
     def test_quick_estimation(self):
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
-        self.run_quick_analysis(treatment='Rain',
-                                outcome='Slippery',
-                                estimand_type='nonparametric-ate',
-                                robustness_method="random_common_cause",
-                                verbose=True
-                                )
+        self.estimator.run_quick_analysis(treatment='Rain',
+                                          outcome='Slippery',
+                                          estimand_type='nonparametric-ate',
+                                          robustness_method="random_common_cause",
+                                          verbose=True
+                                          )
         self.estimator.compare_to_noncausal_regression(input_cols={'Rain', 'Sprinkler'})
+
+    def test_all_quick_estimations(self):
+        self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
+        self.estimator.run_all_quick_analyses(estimand_types=['nonparametric-ate',
+                                                              'nonparametric-nde',
+                                                              'nonparametric-nie'
+                                                              ],
+                                              verbose=True,
+                                              show_tables=True,
+                                              show_heatmaps=True,
+                                              show_validation=True,
+                                              show_largest_effects=True,
+                                              generate_pdf_report=True
+                                              )
 
     def _read_data(self, variables):
         self.estimator.read_csv(index_col=0)
