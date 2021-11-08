@@ -19,7 +19,7 @@ class TestDataGenerator(unittest.TestCase):
         n_common_causes = 3
         nrows = 1000
         self.generator.generate_linear_dataset(beta, n_common_causes, nrows)
-        self.assertEqual(len(self.data), nrows)
-        self.assertEqual(len(self.data.columns), n_common_causes + 2)
+        self.assertEqual(len(self.generator.data), nrows)
+        self.assertEqual(len(self.generator.data.columns), n_common_causes + 2)
         self.generator.display_graph()
         self.generator.write_csv()
