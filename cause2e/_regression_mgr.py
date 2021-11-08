@@ -9,7 +9,9 @@ regression analysis.
 
 
 import numpy as np
+from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 
 
 class RegressionManager:
@@ -34,7 +36,8 @@ class RegressionManager:
                 to drop instead of which columns to use. Defaults to False.
         """
         X, y, col_names = self._get_regression_input(input_cols, drop_cols)
-        reg = LinearRegression(normalize=True).fit(X, y)
+        model = make_pipeline(StandardScaler(with_mean=False), LinearRegression())
+        reg = model.fit(X, y)
         self._print_regression_results(X, y, col_names, reg)
 
     def _get_regression_input(self, input_cols, drop_cols):
