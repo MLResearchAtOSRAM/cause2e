@@ -109,6 +109,19 @@ class TestEstimation(unittest.TestCase):
                                               generate_pdf_report=True
                                               )
 
+    def test_all_quick_estimations_no_binarizing(self):
+        self.estimator.run_all_quick_analyses(estimand_types=['nonparametric-ate',
+                                                              'nonparametric-nde',
+                                                              'nonparametric-nie'
+                                                              ],
+                                              verbose=True,
+                                              show_tables=True,
+                                              show_heatmaps=True,
+                                              show_validation=True,
+                                              show_largest_effects=True,
+                                              generate_pdf_report=True
+                                              )
+
     def test_all_quick_estimations_no_reporting(self):
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.estimator.run_all_quick_analyses(estimand_types=['nonparametric-ate',
