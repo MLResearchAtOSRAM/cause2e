@@ -17,7 +17,7 @@ class LearnerForTesting(StructureLearner):
     @property
     def prepared_paths(self):
         pwd = os.getcwd()
-        data_dir = os.path.join(pwd, 'tests', 'fixtures')
+        data_dir = os.path.join(pwd, 'tests', 'fixtures', 'data')
         output_dir = os.path.join(pwd, 'tests', 'output')
         return PathManager(experiment_name='test_discovery',
                            data_name=self.data_name,

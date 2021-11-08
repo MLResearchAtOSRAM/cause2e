@@ -7,7 +7,7 @@ import copy
 
 class TestPreprocessor(unittest.TestCase):
     def setUp(self):
-        data_path = Path('tests', 'fixtures', 'linear_test.csv')
+        data_path = Path('tests', 'fixtures', 'data', 'linear_test.csv')
         data = pd.read_csv(data_path)
         self.pproc = Preprocessor(data)
         self.good_variables = {'y', 'v0'}
@@ -68,7 +68,7 @@ class TestPreprocessor(unittest.TestCase):
 
 class TestImitatePreprocessor(unittest.TestCase):
     def setUp(self):
-        data_path = Path('tests', 'fixtures', 'linear_test.csv')
+        data_path = Path('tests', 'fixtures', 'data', 'linear_test.csv')
         data = pd.read_csv(data_path)
         self.pproc_1 = Preprocessor(data)
         self.pproc_2 = copy.deepcopy(self.pproc_1)
