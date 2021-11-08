@@ -78,7 +78,6 @@ class TestEstimation(unittest.TestCase):
         self._read_data()
 
     def test_manual_estimation(self):
-        self._read_data(self.variables)
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
         self.estimator.initialize_model('Rain', 'Slippery', 'nonparametric-ate')
         self.estimator.identify_estimand(verbose=True)
