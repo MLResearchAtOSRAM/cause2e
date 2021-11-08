@@ -1,6 +1,6 @@
 import unittest
 from cause2e.path_mgr import PathManager
-from cause2e.estimation import Estimator
+from cause2e.estimator import Estimator
 from cause2e import knowledge
 import os
 
@@ -65,6 +65,30 @@ class TestManualEstimation(unittest.TestCase):
         self.estimator.identify_estimand(verbose=True)
         self.estimator.estimate_effect(verbose=True, method_name="backdoor.linear_regression")
         self.estimator.check_robustness(method_name="random_common_cause", verbose=True)
+        self.estimator.compare_to_noncausal_regression(input_cols={'Rain', 'Sprinkler'})
+
+    def _read_data(self, variables):
+        self.estimator.read_csv(index_col=0)
+        self.assertFalse(self.estimator.data.empty)
+        self.assertEqual(self.estimator.variables, variables)
+        self.estimator.discrete = self.estimator.variables
+        self.estimator.continuous = set()
+
+
+class TestQuickEstimation(unittest.TestCase):
+    def setUp(self):
+        self.estimator = EstimatorForTesting(dataset='sprinkler')
+
+    def test_quick_estimation(self):
+        variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
+        self._read_data(variables)
+        self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
+        self.run_quick_analysis(treatment='Rain',
+                                outcome='Slippery',
+                                estimand_type='nonparametric-ate',
+                                robustness_method="random_common_cause",
+                                verbose=True
+                                )
         self.estimator.compare_to_noncausal_regression(input_cols={'Rain', 'Sprinkler'})
 
     def _read_data(self, variables):
