@@ -75,7 +75,7 @@ class TestEstimation(unittest.TestCase):
     def setUp(self):
         self.estimator = EstimatorForTesting(dataset='sprinkler')
         self.variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
-        self._read_data(self.variables)
+        self._read_data()
 
     def test_manual_estimation(self):
         self._read_data(self.variables)
@@ -124,10 +124,10 @@ class TestEstimation(unittest.TestCase):
                                               generate_pdf_report=False
                                               )
 
-    def _read_data(self, variables):
+    def _read_data(self):
         self.estimator.read_csv(index_col=0)
         self.assertFalse(self.estimator.data.empty)
-        self.assertEqual(self.estimator.variables, variables)
+        self.assertEqual(self.estimator.variables, self.variables)
         self.estimator.discrete = self.estimator.variables
         self.estimator.continuous = set()
 
@@ -136,7 +136,7 @@ class TestEstimationDatabricks(unittest.TestCase):
     def setUp(self):
         self.estimator = EstimatorDatabricksForTesting(dataset='sprinkler')
         self.variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
-        self._read_data(self.variables)
+        self._read_data()
 
     def test_all_quick_estimations(self):
         self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
@@ -153,10 +153,10 @@ class TestEstimationDatabricks(unittest.TestCase):
                                               )
         self.estimator.str_report
 
-    def _read_data(self, variables):
+    def _read_data(self):
         self.estimator.read_csv(index_col=0)
         self.assertFalse(self.estimator.data.empty)
-        self.assertEqual(self.estimator.variables, variables)
+        self.assertEqual(self.estimator.variables, self.variables)
         self.estimator.discrete = self.estimator.variables
         self.estimator.continuous = set()
 
