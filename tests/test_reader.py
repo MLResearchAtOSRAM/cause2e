@@ -6,7 +6,7 @@ import os
 class TestPandasReaderCsv(unittest.TestCase):
     def setUp(self):
         pwd = os.getcwd()
-        data_path = os.path.join(pwd, 'tests', 'fixtures', 'linear_test.csv')
+        data_path = os.path.join(pwd, 'tests', 'fixtures', 'data', 'linear_test.csv')
         self.reader = Reader(data_path, spark=None)
 
     def test_read_csv(self):
@@ -22,7 +22,7 @@ class TestPandasReaderCsv(unittest.TestCase):
 class TestPandasReaderParquet(unittest.TestCase):
     def setUp(self):
         pwd = os.getcwd()
-        data_path = os.path.join(pwd, 'tests', 'fixtures', 'linear_test.parquet')
+        data_path = os.path.join(pwd, 'tests', 'fixtures', 'data', 'linear_test.parquet')
         self.reader = Reader(data_path, spark=None)
 
     def test_read_parquet(self):

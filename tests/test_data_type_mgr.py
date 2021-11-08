@@ -6,7 +6,7 @@ import pandas as pd
 
 class TestTypes(unittest.TestCase):
     def setUp(self):
-        data_path = Path('tests', 'fixtures', 'linear_test.csv')
+        data_path = Path('tests', 'fixtures', 'data', 'linear_test.csv')
         self.data = pd.read_csv(data_path)
 
     def test_no_vars(self):

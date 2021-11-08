@@ -17,8 +17,8 @@ class EstimatorForTesting(Estimator):
     @property
     def prepared_paths(self):
         pwd = os.getcwd()
-        data_dir = os.path.join(pwd, 'tests', 'fixtures')
-        output_dir = os.path.join(pwd, 'tests', 'output')
+        data_dir = os.path.join(pwd, 'tests', 'fixtures', 'data')
+        output_dir = os.path.join(pwd, 'tests', 'fixtures', 'output')
         return PathManager(experiment_name='sprinkler',
                            data_name=self.data_name,
                            data_dir=data_dir,
