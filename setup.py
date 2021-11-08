@@ -25,6 +25,7 @@ setuptools.setup(
         "dowhy",
         "graphviz",
         "ipython",
+        "jinja2",
         "networkx",
         "numpy",
         "pandas",
