@@ -1,18 +1,37 @@
 import unittest
 from cause2e.path_mgr import PathManager
-from cause2e.estimator import Estimator
+from cause2e.estimator import Estimator, EstimatorDatabricks
 from cause2e import knowledge
 import os
 
 
 class EstimatorForTesting(Estimator):
     def __init__(self, file_type='csv', dataset='linear_test', uses_spark=False, spark=None):
+        parameters = ParameterPreparator(file_type='csv', dataset='linear_test', uses_spark=False, spark=None)
+        super().__init__(parameters.prepared_paths,
+                         parameters.transformations,
+                         parameters.validation_dict,
+                         parameters.prepared_spark
+                         )
+
+
+class EstimatorDatabricksForTesting(EstimatorDatabricks):
+    def __init__(self, file_type='csv', dataset='linear_test', uses_spark=False, spark=None):
+        parameters = ParameterPreparator(file_type='csv', dataset='linear_test', uses_spark=False, spark=None)
+        super().__init__(parameters.prepared_paths,
+                         parameters.prepared_spark,
+                         parameters.transformations,
+                         parameters.validation_dict,
+                         )
+
+
+class ParameterPreparator():
+    def __init__(self, file_type='csv', dataset='linear_test', uses_spark=False, spark=None):
         self.file_type = file_type
         self.dataset = dataset
         self.transformations = []
         self.uses_spark = uses_spark
         self.spark = spark
-        super().__init__(self.prepared_paths, self.transformations, self.validation_dict, self.prepared_spark)
 
     @property
     def prepared_paths(self):
@@ -90,6 +109,49 @@ class TestEstimation(unittest.TestCase):
                                               show_largest_effects=True,
                                               generate_pdf_report=True
                                               )
+
+    def test_all_quick_estimations_no_reporting(self):
+        self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
+        self.estimator.run_all_quick_analyses(estimand_types=['nonparametric-ate',
+                                                              'nonparametric-nde',
+                                                              'nonparametric-nie'
+                                                              ],
+                                              verbose=False,
+                                              show_tables=False,
+                                              show_heatmaps=False,
+                                              show_validation=False,
+                                              show_largest_effects=False,
+                                              generate_pdf_report=False
+                                              )
+
+    def _read_data(self, variables):
+        self.estimator.read_csv(index_col=0)
+        self.assertFalse(self.estimator.data.empty)
+        self.assertEqual(self.estimator.variables, variables)
+        self.estimator.discrete = self.estimator.variables
+        self.estimator.continuous = set()
+
+
+class TestEstimationDatabricks(unittest.TestCase):
+    def setUp(self):
+        self.estimator = EstimatorDatabricksForTesting(dataset='sprinkler')
+        self.variables = {'Season', 'Rain', 'Sprinkler', 'Wet', 'Slippery'}
+        self._read_data(self.variables)
+
+    def test_all_quick_estimations(self):
+        self.estimator.binarize_variable('Season', one_val='Spring', zero_val='Winter')
+        self.estimator.run_all_quick_analyses(estimand_types=['nonparametric-ate',
+                                                              'nonparametric-nde',
+                                                              'nonparametric-nie'
+                                                              ],
+                                              verbose=True,
+                                              show_tables=True,
+                                              show_heatmaps=True,
+                                              show_validation=True,
+                                              show_largest_effects=True,
+                                              generate_pdf_report=True
+                                              )
+        self.estimator.str_report
 
     def _read_data(self, variables):
         self.estimator.read_csv(index_col=0)
