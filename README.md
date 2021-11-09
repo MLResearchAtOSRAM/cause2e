@@ -7,7 +7,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cause2e)
 
 ## Getting started:
-The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality are also provided.
+The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis, and its resulting [report file](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/sample_output/sprinkler_report_example.pdf). Additional notebooks with examples of more specific functionality are also provided.
 
 ## Overview:
 The cause2e package provides tools for performing an **end-to-end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
@@ -59,7 +59,7 @@ The documentation has been generated from Python docstrings via [Sphinx](https:/
 We are planning to integrate the *causal discovery toolbox* [3] as a second collection of causal discovery algorithms. In the spirit of end-to-end causal analysis, it would also be desirable to include causal representation learning before the discovery step (e.g. for image data), or causal reinforcement learning after having distilled a valid causal model that delivers interventional distributions.
 
 ## Installation:
-First, install *py-causal* by following the instructions on this page: https://github.com/bd2kccd/py-causal
+First, install *py-causal* by following [these instructions](https://github.com/bd2kccd/py-causal#installation-overview). If you run into troubles with Java on Windows, check out [this comment](https://github.com/MLResearchAtOSRAM/cause2e/issues/14#issuecomment-961936732).
 
 You can then install cause2e from pypi:
 ```
@@ -69,9 +69,11 @@ You can also install it directly from this Github repository to receive the newe
 ```
 pip install dowhy -U
 pip install ipython -U
-pip install networkx -U
-pip install numpy -U
-pip install pandas -U
+pip install jinja2 -U
+pip install pillow -U
+pip install pyarrow -U
+pip install seaborn -U
+
 pip install git+git://github.com/MLResearchAtOSRAM/cause2e
 ```
 
