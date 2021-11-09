@@ -5,7 +5,6 @@ networkx
 numpy
 pandas
 pillow
-pyarrow
 pycausal
 pydot
 seaborn
