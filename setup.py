@@ -26,7 +26,6 @@ setuptools.setup(
     python_requires='>=3.7',
     install_requires=[
         "dowhy",
-        "graphviz",
         "ipython",
         "jinja2",
         "networkx",
