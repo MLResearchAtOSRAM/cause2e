@@ -16,9 +16,12 @@ setuptools.setup(
     url="https://github.com/MLResearchAtOSRAM/cause2e",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: Microsoft :: Windows"
     ],
     python_requires='>=3.7',
     install_requires=[
