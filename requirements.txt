@@ -9,5 +9,4 @@ pillow
 pyarrow
 pycausal
 pydot
-pyspark
 seaborn

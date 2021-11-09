@@ -36,7 +36,6 @@ setuptools.setup(
         "pyarrow",
         "pycausal",
         "pydot",
-        "pyspark",
         "seaborn"
     ]
 )
