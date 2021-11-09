@@ -1,10 +1,10 @@
 [![Build Status](https://dev.azure.com/OsramDS/cause2e_github/_apis/build/status/MLResearchAtOSRAM.cause2e?branchName=main)](https://dev.azure.com/OsramDS/cause2e_github/_build/latest?definitionId=24&branchName=main)
 ![Coverage](https://img.shields.io/azure-devops/coverage/OsramDS/cause2e_github/24)
+![Azure DevOps tests (compact)](https://img.shields.io/azure-devops/tests/OsramDS/cause2e_github/24?compact_message)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cause2e)
-![Azure DevOps tests (compact)](https://img.shields.io/azure-devops/tests/OsramDS/cause2e_github/24?compact_message)
 
 ## Getting started:
 The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis. Additional notebooks with examples of more specific functionality are also provided.
