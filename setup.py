@@ -28,13 +28,9 @@ setuptools.setup(
         "dowhy",
         "ipython",
         "jinja2",
-        "networkx",
-        "numpy",
-        "pandas",
         "pillow",
         "pyarrow",
         "pycausal",
-        "pydot",
         "seaborn"
     ]
 )
