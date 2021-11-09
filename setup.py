@@ -32,6 +32,7 @@ setuptools.setup(
         "numpy",
         "pandas",
         "pillow",
+        "pyarrow",
         "pycausal",
         "pydot",
         "seaborn"
