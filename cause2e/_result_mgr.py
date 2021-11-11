@@ -10,6 +10,7 @@ from the results. It makes use of several helper classes itself.
 
 
 import pandas as pd
+import numpy as np
 from math import isnan
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -205,7 +206,8 @@ class StorageManager:
         # Pearl's Primer suggests in 3.8.4 that counterfactuals are necessary for mediation
         # categorical confounders should not really be an issue?
         val = self._categorical_error_val
-        msg = "Multilevel categorical variables are not fully supported as mediators or confounders. Try binary analysis."
+        msg = "Multilevel categorical variables are not fully supported as mediators or confounders." \
+            " Try binary analysis."
         print(msg)
         print(f"Treatment: {treatment}, outcome: {outcome}, estimand_type: {estimand_type}\n")
         self._process_result_manually(treatment, outcome, estimand_type, val, msg)
@@ -492,9 +494,12 @@ class _HeatmapManager:
         df.columns = [tup[1] for tup in df.columns.values]
         plt.figure(figsize=(3, 3))
         heatmap = sns.heatmap(df)
-        plt.title(title, size=18)
-        plt.ylabel("Treatment", size=15)
-        plt.xlabel("Outcome", size=15)
+        heatmap.tick_params(left=True, bottom=True)
+        plt.yticks(np.arange(len(df.index))+0.5, df.index, size=6, rotation=90, va="center")
+        plt.xticks(np.arange(len(df.columns))+0.5, df.columns, size=6, rotation=0, ha="center")
+        plt.title(title, size=15)
+        plt.ylabel("Treatment", size=10)
+        plt.xlabel("Outcome", size=10)
         plt.show(block=False)
         if save_to_name:
             figure = heatmap.get_figure()
@@ -559,11 +564,11 @@ class _HeatmapManager:
                 or nonparametric-nie'
         """
         if estimand_type == 'nonparametric-ate':
-            return "Average Treatment Effects\n (direct + indirect influences)"
+            return "Overall Effects"
         elif estimand_type == 'nonparametric-nde':
-            return "Natural Direct Effects\n (direct influences only)"
+            return "Direct Effects"
         elif estimand_type == 'nonparametric-nie':
-            return "Natural Indirect Effects\n (indirect influences only)"
+            return "Indirect Effects"
         else:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
@@ -697,7 +702,7 @@ class _ValidationManager:
 
     @staticmethod
     def _create_validation_material_for_saving(validation_str, valid):
-        """Returns title and dataframe for saving the validation results
+        """Returns title and dataframe for saving the validation results.
 
         Args:
             validation_str: A string generated for printing the same information to the console.
