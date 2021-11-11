@@ -700,11 +700,11 @@ class _EdgeAnalyzer:
                 where the edge information should be saved.
         """
         df = pd.DataFrame(self.get_remaining_allowed_edges())
-        title = "Remaining allowed edges (all others forbidden by domain knowledge):"
+        title = "Ignored allowed edges:"
         columns = ["Source", "Destination"]
         if df.empty:
             df = pd.DataFrame(["None"])
-            columns = ["No remaining allowed edges"]
+            columns = ["No ignored allowed edges"]
         save_df_as_png(df, title, save_to_name, col_labels=columns, loc='upper left')
         print("Saving edge analysis.")
 

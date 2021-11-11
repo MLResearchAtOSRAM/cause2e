@@ -763,7 +763,7 @@ class _ValidationManager:
             KeyError: 'Unknown effect name.'
         """
         if name in {'ate', 'nonparametric-ate'}:
-            return "direct + indirect"
+            return "overall"
         elif name in {'nde', 'nonparametric-nde'}:
             return "direct"
         elif name in {'nie', 'nonparametric-nie'}:
@@ -795,6 +795,11 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     for (row, col), cell in t.get_celld().items():
         if (row == 0) or (col == -1):
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+        elif title == 'Report Guide':
+            if col == 0:
+                cell.set_text_props(ha='right')
+            else:
+                cell.set_text_props(ha='left')
     t.auto_set_font_size(False)
     t.set_fontsize(10)
     t.auto_set_column_width(col=list(range(len(df.columns))))
@@ -810,11 +815,68 @@ def _generate_pdf_report(output_name, input_names, dpi=(300, 300)):
         input_names: A list of strings indicating the names of the pngs used for creating the pdf.
         dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
     """
+    _create_guide_png(input_names[0])
     ims = [_convert_rgba_to_rgb(filename) for filename in input_names]
     im = ims[0]
     im_list = ims[1:]
     im.save(output_name, "PDF", dpi=dpi, save_all=True, append_images=im_list)
     print(f"Successfully generated report in {output_name}.\n")
+
+
+def _create_guide_png(filename):
+    """Creates a png with information about the pdf report.
+
+    Args:
+        filename: A string indicating the name of the png to be saved.
+    """
+    overview_dict = _get_overview_dict()
+    df = pd.DataFrame(columns=['Page', 'Content', 'Explanation'])
+    for i, (content, explanation) in enumerate(overview_dict.items()):
+        df.loc[i] = [i + 2, content, explanation]
+    save_df_as_png(df, 'Report Guide', filename, col_labels=df.columns)
+
+
+def _get_overview_dict():
+    """Returns a dictionary with information about the pdf report."""
+
+    knowledge = "Summarizes qualitative domain knowledge by indicating required (red), forbidden" \
+                " (missing) and remaining allowed (dotted) edges."
+    graph = "Shows the result of the causal discovery step. Edges indicate direct causal" \
+            " influences. Used for do-calculus."
+    edges = "Indicates edges that are not forbidden by domain knowledge but not deemed " \
+            " necessary by the causal discovery algorithm."
+    hm_ov = "Visualizes all possible overall causal effects (ATE)." \
+            " How does Y change if we change X?"
+    hm_dir = "Visualizes all possible direct causal effects (NDE)." \
+             " How does Y change if we change X and keep all other variables fixed?"
+    hm_ind = "Visualizes all possible indirect causal effects (NIE)." \
+             " Defined as the difference between overall and direct effect."
+    val_passed = "Lists all causal effects that match our previous expectations " \
+                 " and therefore increase confidence in the causal model."
+    val_failed = "Lists all causal effects that do not match our previous expectations " \
+                 " and therefore decrease confidence in the causal model."
+    rank_ov = "Lists the 10 strongest overall causal effects."
+    rank_dir = "Lists the 10 strongest direct causal effects."
+    rank_ind = "Lists the 10 strongest indirect causal effects."
+    table_ov = "Lists all overall causal effects. Ordering identical to the heatmaps."
+    table_dir = "Lists all direct causal effects. Ordering identical to the heatmaps."
+    table_ind = "Lists all indirect causal effects. Ordering identical to the heatmaps."
+    overview_dict = {"Knowledge graph": knowledge,
+                     "Causal graph": graph,
+                     "Ignored allowed edges": edges,
+                     "Heatmap (overall)": hm_ov,
+                     "Heatmap (direct)": hm_dir,
+                     "Heatmap (indirect)": hm_ind,
+                     "Validations (passed)": val_passed,
+                     "Vaildations (failed)": val_failed,
+                     "Ranking (overall)": rank_ov,
+                     "Ranking (direct)": rank_dir,
+                     "Ranking (indirect)": rank_ind,
+                     "Full table (overall)": table_ov,
+                     "Full table (direct)": table_dir,
+                     "Full table (indirect)": table_ind,
+                     }
+    return overview_dict
 
 
 def _convert_rgba_to_rgb(filename):
