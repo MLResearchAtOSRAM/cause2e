@@ -14,6 +14,7 @@ import numpy as np
 from math import isnan
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 import PIL
 
 
@@ -791,6 +792,9 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     ax.axis('tight')
     ax.set_title(title)
     t = ax.table(cellText=df.values, colLabels=col_labels, rowLabels=row_labels, loc=loc)
+    for (row, _), cell in t.get_celld().items():
+        if row == 0:
+            cell.set_text_props(fontproperties=FontProperties(weight='bold'))
     t.auto_set_font_size(False)
     t.set_fontsize(10)
     t.auto_set_column_width(col=list(range(len(df.columns))))
