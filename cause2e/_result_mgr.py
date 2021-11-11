@@ -10,9 +10,11 @@ from the results. It makes use of several helper classes itself.
 
 
 import pandas as pd
+import numpy as np
 from math import isnan
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 import PIL
 
 
@@ -205,7 +207,8 @@ class StorageManager:
         # Pearl's Primer suggests in 3.8.4 that counterfactuals are necessary for mediation
         # categorical confounders should not really be an issue?
         val = self._categorical_error_val
-        msg = "Multilevel categorical variables are not fully supported as mediators or confounders. Try binary analysis."
+        msg = "Multilevel categorical variables are not fully supported as mediators or confounders." \
+            " Try binary analysis."
         print(msg)
         print(f"Treatment: {treatment}, outcome: {outcome}, estimand_type: {estimand_type}\n")
         self._process_result_manually(treatment, outcome, estimand_type, val, msg)
@@ -492,9 +495,12 @@ class _HeatmapManager:
         df.columns = [tup[1] for tup in df.columns.values]
         plt.figure(figsize=(3, 3))
         heatmap = sns.heatmap(df)
-        plt.title(title, size=18)
-        plt.ylabel("Treatment", size=15)
-        plt.xlabel("Outcome", size=15)
+        heatmap.tick_params(left=True, bottom=True)
+        plt.yticks(np.arange(len(df.index))+0.5, df.index, size=6, rotation=90, va="center")
+        plt.xticks(np.arange(len(df.columns))+0.5, df.columns, size=6, rotation=0, ha="center")
+        plt.title(title, size=15)
+        plt.ylabel("Treatment", size=10)
+        plt.xlabel("Outcome", size=10)
         plt.show(block=False)
         if save_to_name:
             figure = heatmap.get_figure()
@@ -559,11 +565,11 @@ class _HeatmapManager:
                 or nonparametric-nie'
         """
         if estimand_type == 'nonparametric-ate':
-            return "Average Treatment Effects\n (direct + indirect influences)"
+            return "Overall Effects"
         elif estimand_type == 'nonparametric-nde':
-            return "Natural Direct Effects\n (direct influences only)"
+            return "Direct Effects"
         elif estimand_type == 'nonparametric-nie':
-            return "Natural Indirect Effects\n (indirect influences only)"
+            return "Indirect Effects"
         else:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
@@ -697,7 +703,7 @@ class _ValidationManager:
 
     @staticmethod
     def _create_validation_material_for_saving(validation_str, valid):
-        """Returns title and dataframe for saving the validation results
+        """Returns title and dataframe for saving the validation results.
 
         Args:
             validation_str: A string generated for printing the same information to the console.
@@ -757,7 +763,7 @@ class _ValidationManager:
             KeyError: 'Unknown effect name.'
         """
         if name in {'ate', 'nonparametric-ate'}:
-            return "direct + indirect"
+            return "overall"
         elif name in {'nde', 'nonparametric-nde'}:
             return "direct"
         elif name in {'nie', 'nonparametric-nie'}:
@@ -784,8 +790,16 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     fig.tight_layout()
     ax.axis('off')
     ax.axis('tight')
-    ax.set_title(title)
+    ax.set_title(title, weight='bold')
     t = ax.table(cellText=df.values, colLabels=col_labels, rowLabels=row_labels, loc=loc)
+    for (row, col), cell in t.get_celld().items():
+        if (row == 0) or (col == -1):
+            cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+        elif title == 'Report Guide':
+            if col == 0:
+                cell.set_text_props(ha='right')
+            else:
+                cell.set_text_props(ha='left')
     t.auto_set_font_size(False)
     t.set_fontsize(10)
     t.auto_set_column_width(col=list(range(len(df.columns))))
@@ -801,11 +815,69 @@ def _generate_pdf_report(output_name, input_names, dpi=(300, 300)):
         input_names: A list of strings indicating the names of the pngs used for creating the pdf.
         dpi: Optional; A pair indicating the resolution. Defaults to (300, 300).
     """
+    _create_guide_png(input_names[0])
     ims = [_convert_rgba_to_rgb(filename) for filename in input_names]
     im = ims[0]
     im_list = ims[1:]
     im.save(output_name, "PDF", dpi=dpi, save_all=True, append_images=im_list)
     print(f"Successfully generated report in {output_name}.\n")
+
+
+def _create_guide_png(filename):
+    """Creates a png with information about the pdf report.
+
+    Args:
+        filename: A string indicating the name of the png to be saved.
+    """
+    overview_dict = _get_overview_dict()
+    df = pd.DataFrame(columns=['Page', 'Content', 'Explanation'])
+    for i, (content, explanation) in enumerate(overview_dict.items()):
+        df.loc[i] = [i + 2, content, explanation]
+    save_df_as_png(df, 'Report Guide', filename, col_labels=df.columns)
+
+
+def _get_overview_dict():
+    """Returns a dictionary with information about the pdf report."""
+
+    knowledge = "Summarizes qualitative domain knowledge by indicating required (red), forbidden" \
+                " (missing) and remaining allowed (dotted) edges."
+    graph = "Shows the result of the causal discovery step. Edges indicate direct causal" \
+            " influences. Used for do-calculus."
+    edges = "Indicates edges that are not forbidden by domain knowledge but not deemed" \
+            " necessary by the causal discovery algorithm."
+    hm_ov = "Visualizes all possible overall causal effects (ATE)." \
+            " How does Y change if we change X?"
+    hm_dir = "Visualizes all possible direct causal effects (NDE)." \
+             " How does Y change if we change X and keep all other variables fixed?"
+    hm_ind = "Visualizes all possible indirect causal effects (NIE)." \
+             " Defined as the difference between overall and direct effect."
+    rank_ov = "Lists the 10 strongest overall causal effects."
+    rank_dir = "Lists the 10 strongest direct causal effects."
+    rank_ind = "Lists the 10 strongest indirect causal effects."
+    table_ov = "Lists all overall causal effects. Ordering identical to the heatmaps."
+    table_dir = "Lists all direct causal effects. Ordering identical to the heatmaps."
+    table_ind = "Lists all indirect causal effects. Ordering identical to the heatmaps."
+    val_passed = "Lists all causal effects that match our previous expectations" \
+                 " and therefore increase confidence in the causal model."
+    val_failed = "Lists all causal effects that do not match our previous expectations" \
+                 " and therefore decrease confidence in the causal model."
+
+    overview_dict = {"Knowledge graph": knowledge,
+                     "Causal graph": graph,
+                     "Ignored allowed edges": edges,
+                     "Heatmap (overall)": hm_ov,
+                     "Heatmap (direct)": hm_dir,
+                     "Heatmap (indirect)": hm_ind,
+                     "Ranking (overall)": rank_ov,
+                     "Ranking (direct)": rank_dir,
+                     "Ranking (indirect)": rank_ind,
+                     "Full table (overall)": table_ov,
+                     "Full table (direct)": table_dir,
+                     "Full table (indirect)": table_ind,
+                     "Validations (passed)": val_passed,
+                     "Vaildations (failed)": val_failed,
+                     }
+    return overview_dict
 
 
 def _convert_rgba_to_rgb(filename):
