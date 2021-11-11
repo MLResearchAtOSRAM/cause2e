@@ -843,7 +843,7 @@ def _get_overview_dict():
                 " (missing) and remaining allowed (dotted) edges."
     graph = "Shows the result of the causal discovery step. Edges indicate direct causal" \
             " influences. Used for do-calculus."
-    edges = "Indicates edges that are not forbidden by domain knowledge but not deemed " \
+    edges = "Indicates edges that are not forbidden by domain knowledge but not deemed" \
             " necessary by the causal discovery algorithm."
     hm_ov = "Visualizes all possible overall causal effects (ATE)." \
             " How does Y change if we change X?"
@@ -851,30 +851,31 @@ def _get_overview_dict():
              " How does Y change if we change X and keep all other variables fixed?"
     hm_ind = "Visualizes all possible indirect causal effects (NIE)." \
              " Defined as the difference between overall and direct effect."
-    val_passed = "Lists all causal effects that match our previous expectations " \
-                 " and therefore increase confidence in the causal model."
-    val_failed = "Lists all causal effects that do not match our previous expectations " \
-                 " and therefore decrease confidence in the causal model."
     rank_ov = "Lists the 10 strongest overall causal effects."
     rank_dir = "Lists the 10 strongest direct causal effects."
     rank_ind = "Lists the 10 strongest indirect causal effects."
     table_ov = "Lists all overall causal effects. Ordering identical to the heatmaps."
     table_dir = "Lists all direct causal effects. Ordering identical to the heatmaps."
     table_ind = "Lists all indirect causal effects. Ordering identical to the heatmaps."
+    val_passed = "Lists all causal effects that match our previous expectations" \
+                 " and therefore increase confidence in the causal model."
+    val_failed = "Lists all causal effects that do not match our previous expectations" \
+                 " and therefore decrease confidence in the causal model."
+
     overview_dict = {"Knowledge graph": knowledge,
                      "Causal graph": graph,
                      "Ignored allowed edges": edges,
                      "Heatmap (overall)": hm_ov,
                      "Heatmap (direct)": hm_dir,
                      "Heatmap (indirect)": hm_ind,
-                     "Validations (passed)": val_passed,
-                     "Vaildations (failed)": val_failed,
                      "Ranking (overall)": rank_ov,
                      "Ranking (direct)": rank_dir,
                      "Ranking (indirect)": rank_ind,
                      "Full table (overall)": table_ov,
                      "Full table (direct)": table_dir,
                      "Full table (indirect)": table_ind,
+                     "Validations (passed)": val_passed,
+                     "Vaildations (failed)": val_failed,
                      }
     return overview_dict
 

@@ -73,10 +73,10 @@ class PathManager():
         graphs = [knowledge_graph, graph, edge_analysis]
         estimand_types = ['ate', 'nde', 'nie']
         heatmaps = [self._create_heatmap_name(x) for x in estimand_types]
-        validations = [self._create_validation_name(x) for x in ['True', 'False']]
         largest_effects = [self._create_largest_effects_name(x) for x in estimand_types]
         results = [self._create_result_name(x) for x in estimand_types]
-        input_names = guide + graphs + heatmaps + validations + largest_effects + results
+        validations = [self._create_validation_name(x) for x in ['True', 'False']]
+        input_names = guide + graphs + heatmaps + largest_effects + results + validations
         return output_name, input_names
 
     def _create_guide_name(self):
