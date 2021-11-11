@@ -790,7 +790,7 @@ def save_df_as_png(df, title, filename, col_labels=None, row_labels=None, loc='u
     fig.tight_layout()
     ax.axis('off')
     ax.axis('tight')
-    ax.set_title(title)
+    ax.set_title(title, weight='bold')
     t = ax.table(cellText=df.values, colLabels=col_labels, rowLabels=row_labels, loc=loc)
     for (row, col), cell in t.get_celld().items():
         if (row == 0) or (col == -1):
