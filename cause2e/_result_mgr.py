@@ -565,11 +565,11 @@ class _HeatmapManager:
                 or nonparametric-nie'
         """
         if estimand_type == 'nonparametric-ate':
-            return "All Overall Effects"
+            return "Overall Effects"
         elif estimand_type == 'nonparametric-nde':
-            return "All Direct Effects"
+            return "Direct Effects"
         elif estimand_type == 'nonparametric-nie':
-            return "All Indirect Effects"
+            return "Indirect Effects"
         else:
             raise KeyError("estimand_type must be nonparametric-ate, nonparametric-nde or "
                            + "nonparametric-nie")
