@@ -7,7 +7,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cause2e)
 
 ## Getting started:
-The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis, and its resulting [report file](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/sample_output/sprinkler_report_example.pdf). Additional notebooks with examples of more specific functionality are also provided.
+The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis, and its resulting [report file](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/sample_output/sprinkler_report_example.pdf). Additional notebooks with examples of more specific functionality are also provided. If you are new to graph-based causal inference, this [presentation](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/presentation_cdsm.pdf) from [CDSM21](https://www.causalscience.org/meeting/about/about/) might help you out.
 
 ## Contributing:
 Your contributions are more than welcome! If you have an idea for a feature, please open an issue or (even better) implement it and make a pull request.
