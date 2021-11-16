@@ -9,6 +9,9 @@
 ## Getting started:
 The easiest way of learning about cause2e's functionality and starting your own causal analyses is to check out this [example notebook](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/examples/minimal_end_to_end_causal_analysis.ipynb), which can be easily adapted to fit the needs of your custom analysis, and its resulting [report file](https://github.com/MLResearchAtOSRAM/cause2e/blob/main/sample_output/sprinkler_report_example.pdf). Additional notebooks with examples of more specific functionality are also provided.
 
+## Contributing:
+Your contributions are more than welcome! If you have an idea for a feature, please open an issue or (even better) implement it and make a pull request.
+
 ## Overview:
 The cause2e package provides tools for performing an **end-to-end causal analysis** of your data. If you have data and domain knowledge about the data generating process, it allows you to:
 - learn a graphical causal model of the data generating process
