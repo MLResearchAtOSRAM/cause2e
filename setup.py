@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="cause2e",
-    version="0.2.0",
+    version="0.2.1",
     author="Daniel Gruenbaum",
     author_email="daniel.gruenbaum@ams-osram.com",
     description="A package for end-to-end causal analysis",
