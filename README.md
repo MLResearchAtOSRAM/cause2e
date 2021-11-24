@@ -1,6 +1,5 @@
 [![Build Status](https://dev.azure.com/OsramDS/cause2e_github/_apis/build/status/MLResearchAtOSRAM.cause2e?branchName=main)](https://dev.azure.com/OsramDS/cause2e_github/_build/latest?definitionId=24&branchName=main)
 ![Coverage](https://img.shields.io/azure-devops/coverage/OsramDS/cause2e_github/24)
-![Azure DevOps tests (compact)](https://img.shields.io/azure-devops/tests/OsramDS/cause2e_github/24?compact_message)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Linux](https://svgshare.com/i/Zhy.svg)](https://svgshare.com/i/Zhy.svg)
 [![Windows](https://svgshare.com/i/ZhY.svg)](https://svgshare.com/i/ZhY.svg)
