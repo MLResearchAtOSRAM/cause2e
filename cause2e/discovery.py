@@ -153,7 +153,7 @@ class StructureLearner():
                 evaluated after estimation of the effects. Defaults to None.
             show: Optional; A boolean indicating if information about the passed knowledge should
                 be displayed. Defaults to True.
-            show: Optional; A boolean indicating if information about the passed knowledge should
+            save: Optional; A boolean indicating if information about the passed knowledge should
                 be saved to a png. Defaults to True.
         """
         forbidden = edge_creator.forbidden_edges
@@ -247,28 +247,43 @@ class StructureLearner():
         """
         self._plain_searcher.show_algo_params(algo_name, test_name, score_name)
 
-    def run_quick_search(self, verbose=True, keep_vm=True, show_graph=True, save_graph=True):
+    def run_quick_search(self, engine='pycausal', verbose=True, keep_vm=True, show_graph=True, save_graph=True):
         """Infers the causal graph from the data and domain knowledge with preset parameters.
 
         Args:
+            engine: Optional; A string indicating which causal discovery package to use. Currently, pycausal
+                and causal-learn are available. Defaults to pycausal.
             verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
-            keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
+            keep_vm: Optional; A boolean indicating if we want to keep the Java VM (used by pycausal) alive
                 after the search. This is required to use TETRAD objects afterwards. Defaults to
                 True.
-            show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
+            show_graph: Optional; A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
-            show_graph: A boolean indicating if the resulting graph should be saved. Defaults to
+            show_graph: Optional; A boolean indicating if the resulting graph should be saved. Defaults to
                 True.
         """
-        self.run_search(algo='fges',
-                        use_knowledge=True,
-                        verbose=verbose,
-                        keep_vm=keep_vm,
-                        show_graph=show_graph,
-                        save_graph=save_graph,
-                        scoreId='cg-bic-score',
-                        faithfulnessAssumed=True,
-                        symmetricFirstStep=True)
+        if engine == 'pycausal':
+            print("Running pycausal FGES algorithm. Consider changing the engine to causal-learn if you run"
+                  " into Java related problems.\n")
+            self.run_search(algo='fges',
+                            use_knowledge=True,
+                            verbose=verbose,
+                            keep_vm=keep_vm,
+                            show_graph=show_graph,
+                            save_graph=save_graph,
+                            scoreId='cg-bic-score',
+                            faithfulnessAssumed=True,
+                            symmetricFirstStep=True,
+                            )
+        elif engine == 'causal-learn':
+            print("Running causal-learn PC algorithm.\n")
+            self.run_causallearn_search(verbose=verbose,
+                                        keep_vm=keep_vm,
+                                        show_graph=show_graph,
+                                        save_graph=save_graph,
+                                        )
+        else:
+            raise KeyError('Unknown engine! Must be pycausal or causal-learn!\n')
 
     def run_search(self,
                    algo,
@@ -277,7 +292,8 @@ class StructureLearner():
                    keep_vm=True,
                    show_graph=True,
                    save_graph=True,
-                   **kwargs):
+                   **kwargs
+                   ):
         """Infers the causal graph from the data and domain knowledge.
 
         This is where the causal discovery algorithms are invoked. Currently only algorithms from
@@ -293,12 +309,12 @@ class StructureLearner():
             use_knowledge: Optional; A boolean indicating if we want to use our domain knowledge
                 (some TETRAD algorithms cannot use it). Defaults to True.
             verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
-            keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
+            keep_vm: Optional; A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
                 after the search. This is required to use TETRAD objects afterwards. Defaults to
                 True.
-            show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
+            show_graph: Optional; A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
-            save_graph: A boolean indicating if the resulting graph should be saved. Defaults to
+            save_graph: Optional; A boolean indicating if the resulting graph should be saved. Defaults to
                 True.
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
@@ -310,6 +326,33 @@ class StructureLearner():
                                   keep_vm=keep_vm,
                                   **kwargs
                                   )
+        self._get_search_results(show_graph, save_graph)
+
+    def run_causallearn_search(self,
+                               alpha=0.05,
+                               use_knowledge=True,
+                               verbose=True,
+                               show_graph=True,
+                               save_graph=True,
+                               **kwargs
+                               ):
+        self._searcher = _searcher.CausalLearnSearcher(self.data, self.knowledge)
+        self._searcher.run_search(alpha=alpha,
+                                  use_knowledge=use_knowledge,
+                                  verbose=verbose,
+                                  **kwargs
+                                  )
+        self._get_search_results(show_graph, save_graph)
+
+    def _get_search_results(self, show_graph=True, save_graph=True):
+        """Gets the results of a causal discovery run from the searcher.
+
+        Args:
+            show_graph: Optional; A boolean indicating if the resulting graph should be shown. Defaults to
+                True.
+            save_graph: Optional; A boolean indicating if the resulting graph should be saved. Defaults to
+                True.
+        """
         self.graph = self._searcher.graph_output
         if show_graph:
             self.display_graph()

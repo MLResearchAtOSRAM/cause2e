@@ -4,34 +4,56 @@ _searcher.py
 This module implements classes for causal discovery.
 
 It is used by the discovery module to learn the causal graph from data and domain knowledge.
-Currently only algorithms from the TETRAD program are supported.
+Currently, algorithms from py-causal and the pc-algorithm from causal-learn are supported.
 """
 
 from cause2e import _data_type_mgr as dtm, _graph
+
+from abc import ABC, abstractmethod
+
 from pycausal.pycausal import pycausal as pc
 from pycausal import search as s
 from pycausal import prior as p
 
+from causallearn.utils.PCUtils.BackgroundKnowledge import BackgroundKnowledge
+from causallearn.graph.GraphNode import GraphNode
+from causallearn.search.ConstraintBased.PC import pc as cl_pc
+from causallearn.utils.cit import fisherz
 
-class TetradSearcher:
-    """Main class for causal discovery with TETRAD algorithms.
+
+class _Searcher(ABC):
+    """Abstract base class for causal discovery classes.
 
     Attributes:
         graph_output: A cause2e.Graph representing the causal graph.
-        scores: Scores for the graph or certain edges after search. Not available yet.
+    """
+
+    def __init__(self, data, knowledge):
+        self._data = data
+        self._knowledge = knowledge
+        self.graph_output = None
+
+    @abstractmethod
+    def run_search(self, **kwargs):
+        pass
+
+
+class TetradSearcher(_Searcher):
+    """Main class for causal discovery with TETRAD algorithms called by py-causal.
+
+    Attributes:
+        graph_output: A cause2e.Graph representing the causal graph.
     """
     def __init__(self, data, continuous, discrete, knowledge):
         """Inits TetradSearcher."""
-        self._data = data
+        super().__init__(data, knowledge)
         self._data_types = self._get_data_types(continuous, discrete)
         self._type_mgr = dtm.DataTypeManager(data,
                                              continuous,
                                              discrete
                                              )
-        self._knowledge = knowledge
         pc().start_vm()
         self._tetrad = s.tetradrunner()
-        self.scores = None
         self._separator = "---------------------\n"
 
     def show_search_algos(self):
@@ -163,7 +185,6 @@ class TetradSearcher:
                          **kwargs
                          )
         self._get_graphs()
-        self._get_scores()
         if not keep_vm:  # can be opened only once (no restart after closing)
             pc().stop_vm()
         else:
@@ -174,9 +195,114 @@ class TetradSearcher:
         tetrad_graph = self._tetrad.getTetradGraph()
         self.graph_output = _graph.Graph.from_tetrad(tetrad_graph, knowledge=self._knowledge)
 
-    def _get_scores(self):
-        pass
-
     def _stop_vm(self):
         """Stops the Java VM. No restart possible."""
         pc().stop_vm()
+
+
+class CausalLearnSearcher:
+    """Main class for causal discovery with causal-learn algorithms. Causal-learn is a Python translation
+       and extension of the TETRAD program.
+
+    Attributes:
+        graph_output: A cause2e.Graph representing the causal graph.
+    """
+    def __init__(self, data, knowledge):
+        """Inits CausalLearnSearcher."""
+        self._data = data
+        self._knowledge = knowledge
+        self._translate_knowledge()
+        self._colors_dict = {'directed': 'b', 'undirected': 'g', 'bidirected': 'r'}
+        self._names_dict = {ind: name for ind, name in enumerate(self._data.columns)}
+
+    def _translate_knowledge(self):
+        """Translates the knowledge from the knowledge dictionary in a format suitable for causal-learn."""
+        self._cl_knowledge = BackgroundKnowledge()
+        self._create_nodes()
+        if self._knowledge:
+            for source, destination in self._knowledge['forbidden']:
+                self._forbid_edge(source, destination)
+            for source, destination in self._knowledge['required']:
+                self._require_edge(source, destination)
+
+    def _create_nodes(self): #COMMENT ALL THE NEW FUNCTIONS AND CHECK WHICH ARGUMENTS WE SHOULD PASS TO THE SEARCH
+        nodes_numeric = [GraphNode(f'X{ind + 1}') for ind, _ in enumerate(self._data.columns)]
+        self._nodes = {x: nodes_numeric[self._data.columns.get_loc(x)] for x in self._data.columns}
+
+    def _forbid_edge(self, source, destination):
+        self._cl_knowledge.add_forbidden_by_node(self._nodes[source], self._nodes[destination])
+
+    def _require_edge(self, source, destination):
+        self._cl_knowledge.add_required_by_node(self._nodes[source], self._nodes[destination])
+
+    def run_search(self,
+                   alpha=0.05,
+                   use_knowledge=True,
+                   verbose=True,
+                   **kwargs
+                   ):
+        """Infers the causal graph from the data and domain knowledge.
+
+        This is where the causal discovery algorithms are invoked. Currently only the pc algorithm
+        is available, as other options do not support domain knowledge yet.
+
+        Args:
+            alpha: Optional; A float indicating the significance threshold used in conditional independence tests.
+            use_knowledge: Optional; A boolean indicating if we want to use our domain knowledge
+                (some algorithms cannot use it). Defaults to True.
+            verbose: Optional; A boolean indicating if we want verbose output. Defaults to True.
+            **kwargs: Arguments that are used to further specify parameters for the search. Use
+                show_algo_params to find out which ones need to be passed.
+            """
+        if use_knowledge:
+            knowledge = self._cl_knowledge
+        else:
+            knowledge = None
+        self._cl_graph = cl_pc(data=self._data.to_numpy(),
+                               alpha=alpha,
+                               indep_test=fisherz,
+                               stable=True,
+                               uc_rule=0,
+                               uc_priority=-1,
+                               background_knowledge=knowledge
+                               )
+        self._get_graph()
+
+    def _get_graph(self):
+        """Extracts the causal graph from an internal causal-learn format into a cause2e.Graph."""
+        edges = self._get_edges()
+        if edges['bidirected']:
+            raise ValueError("Watch out! There are bidirected edges. Have you included all relevant variables?")
+        else:
+            self.graph_output = _graph.Graph.from_edges(directed_edges=edges['directed'],
+                                                        undirected_edges=edges['undirected'],
+                                                        knowledge=self._knowledge
+                                                        )
+
+    def _get_edges(self):
+        edges_cl = {orientation: self._get_numeric_edges_by_orientation(orientation) for orientation in self._colors_dict}
+        return {orientation: self._translate_edges(edges_cl[orientation], orientation) for orientation in edges_cl}
+
+    def _get_numeric_edges_by_orientation(self, orientation):
+        color = self._colors_dict[orientation]
+        edges = self._nx_graph.edges
+        return {(source, destination) for source, destination in edges if self._check_color(source, destination, color)}
+
+    @property
+    def _nx_graph(self):
+        self._cl_graph.to_nx_graph()
+        return self._cl_graph.nx_graph
+
+    def _check_color(self, source, destination, color):
+        return self._nx_graph[source][destination]['color'] == color
+
+    def _translate_edges(self, edges, orientation):
+        return {self._translate_edge(source, destination, orientation) for source, destination in edges}
+
+    def _translate_edge(self, source, destination, orientation):
+        source_translated = self._names_dict[source]
+        destination_translated = self._names_dict[destination]
+        if orientation == 'directed':
+            return (source_translated, destination_translated)
+        else:
+            return frozenset({source_translated, destination_translated})
