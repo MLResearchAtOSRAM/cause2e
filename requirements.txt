@@ -1,3 +1,4 @@
+causal-learn
 dowhy
 ipython
 jinja2
