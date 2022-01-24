@@ -143,7 +143,7 @@ class StructureLearner():
                       validation_creator=None,
                       show=True,
                       save=True):
-        """Sets the domain knowledge that we have a about the causal graph.
+        """Sets the domain knowledge that we have about the causal graph.
 
         Args:
             edge_creator: A cause2e.knowledge.EdgeCreator that has been used to create
