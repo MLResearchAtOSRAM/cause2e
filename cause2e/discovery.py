@@ -158,10 +158,12 @@ class StructureLearner():
         """
         forbidden = edge_creator.forbidden_edges
         required = edge_creator.required_edges
+        self._check_edge_names(forbidden | required)
         if validation_creator:
             expected_effects = validation_creator.expected_effects
         else:
             expected_effects = {}
+        self._check_effect_names(expected_effects)
         self.knowledge = {'forbidden': forbidden,
                           'required': required,
                           'expected_effects': expected_effects
@@ -170,6 +172,27 @@ class StructureLearner():
             self.show_knowledge()
         if save:
             self.save_knowledge()
+
+    def _check_edge_names(self, edges):
+        for edge in edges:
+            self._check_edge_name(edge)
+
+    def _check_edge_name(self, edge):
+        for node in edge:
+            self._check_variable_name(node)
+
+    def _check_variable_name(self, node):
+        msg = f"{node} is not a valid variable name in the model. Typo?"
+        if node not in self.variables:
+            raise ValueError(msg)
+
+    def _check_effect_names(self, expected_effects):
+        for effect in expected_effects:
+            self._check_effect_name(effect)
+
+    def _check_effect_name(self, effect):
+        for name in {effect[0], effect[1]}:
+            self._check_variable_name(name)
 
     def show_knowledge(self):
         """Shows all domain knowledge that is used for causal discovery."""
