@@ -172,7 +172,7 @@ class StructureLearner():
                 self.show_knowledge()
             if save:
                 self.save_knowledge()
-        except AssertionError as e:
+        except knowledge.SpellingError as e:
             print("A spelling error has been detected in the domain knowledge:")
             print(e)
             print("Please fix the spelling and pass the updated knowledge to the learner.")

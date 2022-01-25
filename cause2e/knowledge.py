@@ -292,7 +292,8 @@ class Spellchecker:
         """
         # TODO: Write a custom exception type.
         msg = f"'{node}' is not a valid variable name in the model. Typo?"
-        assert (node in self._variables), msg
+        if node not in self._variables:
+            raise SpellingError(msg)
 
     def _check_effect_names(self):
         """Checks the spelling of all variable names in the quantitative domain knowledge."""
@@ -307,6 +308,10 @@ class Spellchecker:
         """
         for name in {effect[0], effect[1]}:
             self._check_variable_name(name)
+
+
+class SpellingError(Exception):
+    pass
 
 
 def _set_product(set_1, set_2):
