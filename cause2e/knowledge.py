@@ -257,10 +257,17 @@ def _set_product_multiple(set_pairs):
 
 class Spellchecker:
     """Helper class for checking the spelling of all variable names in the domain knowledge."""
-    def __init__(self, learner, edge_creator=None, validation_creator=None):
-        self._variables = learner.variables
-        self._edges = edge_creator.forbidden_edges | edge_creator.required_edges
-        self._expected_effects = validation_creator.expected_effects
+    def __init__(self, variables, edges, expected_effects):
+        self._variables = variables
+        self._edges = edges
+        self._expected_effects = expected_effects
+
+    @classmethod
+    def from_high_level(cls, learner, edge_creator=None, validation_creator=None):
+        return cls(learner.variables,
+                   edge_creator.forbidden_edges | edge_creator.required_edges,
+                   validation_creator.expected_effects
+                   )
 
     def check_names(self):
         """Checks the spelling of all variable names in the domain knowledge."""

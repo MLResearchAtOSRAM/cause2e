@@ -188,7 +188,7 @@ class StructureLearner():
             validation_creator: A cause2e.knowledge.ValidationCreator that has been used
                 to create a dictionary containing expected quantitative causal effects.
         """
-        spellchecker = knowledge.Spellchecker(self, edge_creator, validation_creator)
+        spellchecker = knowledge.Spellchecker.from_high_level(self, edge_creator, validation_creator)
         spellchecker.check_names()
 
     def show_knowledge(self):
