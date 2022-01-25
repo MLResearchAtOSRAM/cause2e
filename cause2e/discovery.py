@@ -165,9 +165,9 @@ class StructureLearner():
             else:
                 expected_effects = {}
             self.knowledge = {'forbidden': forbidden,
-                            'required': required,
-                            'expected_effects': expected_effects
-                            }
+                              'required': required,
+                              'expected_effects': expected_effects
+                              }
             if show:
                 self.show_knowledge()
             if save:
@@ -176,7 +176,8 @@ class StructureLearner():
             print("A spelling error has been detected in the domain knowledge:")
             print(e)
             print("Please fix the spelling and pass the updated knowledge to the learner.")
-
+        else:
+            print("Domain knowledge has been successfully passed to the learner.")
 
     def _spellcheck_knowledge(self, edge_creator, validation_creator):
         """Checks the spelling of all variable names in the domain knowledge.
