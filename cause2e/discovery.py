@@ -14,7 +14,7 @@ The proposed procedure is as follows:\n
 7) Save the graph in various file formats.\n
 """
 
-from cause2e import _reader, _preproc, _graph, _searcher, estimator
+from cause2e import _reader, _preproc, knowledge, _graph, _searcher, estimator
 
 
 class StructureLearner():
@@ -156,43 +156,39 @@ class StructureLearner():
             show: Optional; A boolean indicating if information about the passed knowledge should
                 be saved to a png. Defaults to True.
         """
-        forbidden = edge_creator.forbidden_edges
-        required = edge_creator.required_edges
-        self._check_edge_names(forbidden | required)
-        if validation_creator:
-            expected_effects = validation_creator.expected_effects
-        else:
-            expected_effects = {}
-        self._check_effect_names(expected_effects)
-        self.knowledge = {'forbidden': forbidden,
-                          'required': required,
-                          'expected_effects': expected_effects
-                          }
-        if show:
-            self.show_knowledge()
-        if save:
-            self.save_knowledge()
+        try:
+            self._spellcheck_knowledge(edge_creator, validation_creator)
+            forbidden = edge_creator.forbidden_edges
+            required = edge_creator.required_edges
+            if validation_creator:
+                expected_effects = validation_creator.expected_effects
+            else:
+                expected_effects = {}
+            self.knowledge = {'forbidden': forbidden,
+                            'required': required,
+                            'expected_effects': expected_effects
+                            }
+            if show:
+                self.show_knowledge()
+            if save:
+                self.save_knowledge()
+        except AssertionError as e:
+            print("A spelling error has been detected in the domain knowledge:")
+            print(e)
+            print("Please fix the spelling and pass the updated knowledge to the learner.")
 
-    def _check_edge_names(self, edges):
-        for edge in edges:
-            self._check_edge_name(edge)
 
-    def _check_edge_name(self, edge):
-        for node in edge:
-            self._check_variable_name(node)
+    def _spellcheck_knowledge(self, edge_creator, validation_creator):
+        """Checks the spelling of all variable names in the domain knowledge.
 
-    def _check_variable_name(self, node):
-        msg = f"{node} is not a valid variable name in the model. Typo?"
-        if node not in self.variables:
-            raise ValueError(msg)
-
-    def _check_effect_names(self, expected_effects):
-        for effect in expected_effects:
-            self._check_effect_name(effect)
-
-    def _check_effect_name(self, effect):
-        for name in {effect[0], effect[1]}:
-            self._check_variable_name(name)
+        Args:
+            edge_creator: A cause2e.knowledge.EdgeCreator that has been used to create
+                required and forbidden edges.
+            validation_creator: A cause2e.knowledge.ValidationCreator that has been used
+                to create a dictionary containing expected quantitative causal effects.
+        """
+        spellchecker = knowledge.Spellchecker(self, edge_creator, validation_creator)
+        spellchecker.check_names()
 
     def show_knowledge(self):
         """Shows all domain knowledge that is used for causal discovery."""
