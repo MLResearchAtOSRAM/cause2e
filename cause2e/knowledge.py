@@ -255,6 +255,72 @@ def _set_product_multiple(set_pairs):
     return set(itertools.chain.from_iterable(se))  # flatten
 
 
+class Spellchecker:
+    """Helper class for checking the spelling of all variable names in the domain knowledge."""
+    def __init__(self, variables, edges, expected_effects):
+        self._variables = variables
+        self._edges = edges
+        self._expected_effects = expected_effects
+
+    @classmethod
+    def from_high_level(cls, learner, edge_creator=None, validation_creator=None):
+        return cls(learner.variables,
+                   edge_creator.forbidden_edges | edge_creator.required_edges,
+                   validation_creator.expected_effects
+                   )
+
+    def check_names(self):
+        """Checks the spelling of all variable names in the domain knowledge."""
+        self._check_edge_names()
+        self._check_effect_names()
+
+    def _check_edge_names(self):
+        """Checks the spelling of all variable names in the qualitative domain knowledge."""
+        for edge in self._edges:
+            self._check_edge_name(edge)
+
+    def _check_edge_name(self, edge):
+        """Checks the spelling of both node names in a given edge.
+
+        Args:
+            edge: A pair of nodes in the format (source, destination).
+        """
+        for node in edge:
+            self._check_variable_name(node)
+
+    def _check_variable_name(self, node):
+        """Checks the spelling of a node name by comparing it to the variable names in the data.
+
+        Args:
+            node: A string indicating the name of the node.
+
+        Raises:
+            ValueError if no data column matches the name of the node.
+        """
+        # TODO: Write a custom exception type.
+        msg = f"'{node}' is not a valid variable name in the model. Typo?"
+        if node not in self._variables:
+            raise SpellingError(msg)
+
+    def _check_effect_names(self):
+        """Checks the spelling of all variable names in the quantitative domain knowledge."""
+        for effect in self._expected_effects:
+            self._check_effect_name(effect)
+
+    def _check_effect_name(self, effect):
+        """Checks the spelling of the treatment and outcome names in an expected causal effect.
+
+        Args:
+            effect: A tuple whose first two entries hold the names of treatment and outcome.
+        """
+        for name in {effect[0], effect[1]}:
+            self._check_variable_name(name)
+
+
+class SpellingError(Exception):
+    pass
+
+
 def _set_product(set_1, set_2):
     """Returns the cartesian product of two sets."""
     return set(itertools.product(set_1, set_2))

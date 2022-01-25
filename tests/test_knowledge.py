@@ -2,12 +2,13 @@ import unittest
 from cause2e.knowledge import (_set_product,
                                _set_product_multiple,
                                EdgeCreator,
-                               KnowledgeChecker
+                               KnowledgeChecker,
+                               Spellchecker,
+                               SpellingError,
                                )
 
 
 class TestKnowledgeGeneration(unittest.TestCase):
-
     def setUp(self):
         self.order = [frozenset({'a', 'b'}),
                       frozenset({1, 2, 3}),
@@ -106,6 +107,32 @@ class TestNoKnowledgeChecker(unittest.TestCase):
 
     def test_respects_no_knowledge(self):
         self.checker.respects_knowledge()
+
+
+class TestSpellchecker(unittest.TestCase):
+    def setUp(self):
+        self.checker = Spellchecker(
+            variables={'A', 'B', 'C'},
+            edges={
+                ('A', 'B'),
+            },
+            expected_effects={
+                ('A', 'B', 'nonparametric-ate'): ('greater', 0),
+            }
+        )
+
+    def test_no_typo(self):
+        self.checker.check_names()
+
+    def test_typo_in_edges(self):
+        self.checker._edges.add(('E', 'A'))
+        with self.assertRaises(SpellingError):
+            self.checker.check_names()
+
+    def test_typo_in_expected_effects(self):
+        self.checker._expected_effects[('A', 'Y', 'nonparametric-ate')] = ('greater', 0)
+        with self.assertRaises(SpellingError):
+            self.checker.check_names()
 
 
 if __name__ == '__main__':
