@@ -264,9 +264,17 @@ class Spellchecker:
 
     @classmethod
     def from_high_level(cls, learner, edge_creator=None, validation_creator=None):
+        if edge_creator:
+            edges = edge_creator.forbidden_edges | edge_creator.required_edges
+        else:
+            edges = set()
+        if validation_creator:
+            expected_effects = validation_creator.expected_effects
+        else:
+            expected_effects = {}
         return cls(learner.variables,
-                   edge_creator.forbidden_edges | edge_creator.required_edges,
-                   validation_creator.expected_effects
+                   edges,
+                   expected_effects,
                    )
 
     def check_names(self):

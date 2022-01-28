@@ -1,11 +1,15 @@
 import unittest
+import itertools
+import pandas as pd
 from cause2e.knowledge import (_set_product,
                                _set_product_multiple,
                                EdgeCreator,
+                               ValidationCreator,
                                KnowledgeChecker,
                                Spellchecker,
                                SpellingError,
                                )
+from cause2e.discovery import StructureLearner
 
 
 class TestKnowledgeGeneration(unittest.TestCase):
@@ -111,14 +115,17 @@ class TestNoKnowledgeChecker(unittest.TestCase):
 
 class TestSpellchecker(unittest.TestCase):
     def setUp(self):
+        self.variables = {'A', 'B', 'C'}
+        self.edges = {
+            ('A', 'B'),
+        }
+        self.expected_effects = {
+            ('A', 'B', 'nonparametric-ate'): {'Expected': ('greater', 0)},
+        }
         self.checker = Spellchecker(
-            variables={'A', 'B', 'C'},
-            edges={
-                ('A', 'B'),
-            },
-            expected_effects={
-                ('A', 'B', 'nonparametric-ate'): ('greater', 0),
-            }
+            variables=self.variables,
+            edges=self.edges,
+            expected_effects=self.expected_effects,
         )
 
     def test_no_typo(self):
@@ -130,9 +137,61 @@ class TestSpellchecker(unittest.TestCase):
             self.checker.check_names()
 
     def test_typo_in_expected_effects(self):
-        self.checker._expected_effects[('A', 'Y', 'nonparametric-ate')] = ('greater', 0)
+        self.checker._expected_effects[('A', 'Y', 'nonparametric-ate')] = {'Expected': ('greater', 0)},
         with self.assertRaises(SpellingError):
             self.checker.check_names()
+
+    def test_init_without_validation(self):
+        checker = Spellchecker(
+            variables=self.variables,
+            edges=self.edges,
+            expected_effects={},
+        )
+        checker.check_names()
+
+    def test_init_without_edges(self):
+        checker = Spellchecker(
+            variables=self.variables,
+            edges=set(),
+            expected_effects=self.expected_effects,
+        )
+        checker.check_names()
+
+    def test_init_from_high_level(self):
+        options = [True, False]
+        checkers = []
+        for use_edge_creator, use_validation_creator in itertools.product(options, options):
+            checkers.append(self._init_from_high_level(use_edge_creator, use_validation_creator))
+        checker = checkers[0]
+        self.assertEqual(checker._variables, self.checker._variables)
+        self.assertEqual(checker._edges, self.checker._edges)
+        self.assertEqual(checker._expected_effects, self.checker._expected_effects)
+
+    def _init_from_high_level(self, use_edge_creator, use_validation_creator):
+        self._set_up_higher_level_input()
+        if use_edge_creator:
+            edge_creator = self.edge_creator
+        else:
+            edge_creator = None
+        if use_validation_creator:
+            validation_creator = self.validation_creator
+        else:
+            validation_creator = None
+        return Spellchecker.from_high_level(
+            learner=self.learner,
+            edge_creator=edge_creator,
+            validation_creator=validation_creator,
+        )
+
+    def _set_up_higher_level_input(self):
+        self.learner = StructureLearner(paths=None)
+        self.learner.data = pd.DataFrame(
+            {var: [None] for var in self.variables}
+        )
+        self.edge_creator = EdgeCreator()
+        self.edge_creator.require_edges(self.edges)
+        self.validation_creator = ValidationCreator()
+        self.validation_creator.expected_effects = self.expected_effects
 
 
 if __name__ == '__main__':
