@@ -14,6 +14,7 @@ The proposed procedure is as follows:\n
 7) Save the graph in various file formats.\n
 """
 
+from multiprocessing import Process, Manager
 from cause2e import _reader, _preproc, knowledge, _graph, _searcher, estimator
 
 
@@ -267,7 +268,7 @@ class StructureLearner():
         """
         self._plain_searcher.show_algo_params(algo_name, test_name, score_name)
 
-    def run_quick_search(self, verbose=True, keep_vm=True, show_graph=True, save_graph=True):
+    def run_quick_search(self, verbose=True, keep_vm=True, reusable_vm=True, show_graph=True, save_graph=True):
         """Infers the causal graph from the data and domain knowledge with preset parameters.
 
         Args:
@@ -275,6 +276,8 @@ class StructureLearner():
             keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
                 after the search. This is required to use TETRAD objects afterwards. Defaults to
                 True.
+            reusable_vm: A boolean indicating if we want to have the option to reuse the Java VM
+                after potentially closing it. Works doing VM work in a separate process.
             show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
             show_graph: A boolean indicating if the resulting graph should be saved. Defaults to
@@ -284,6 +287,7 @@ class StructureLearner():
                         use_knowledge=True,
                         verbose=verbose,
                         keep_vm=keep_vm,
+                        reusable_vm=reusable_vm,
                         show_graph=show_graph,
                         save_graph=save_graph,
                         scoreId='cg-bic-score',
@@ -295,6 +299,7 @@ class StructureLearner():
                    use_knowledge=True,
                    verbose=True,
                    keep_vm=True,
+                   reusable_vm=True,
                    show_graph=True,
                    save_graph=True,
                    **kwargs):
@@ -316,6 +321,8 @@ class StructureLearner():
             keep_vm: A boolean indicating if we want to keep the Java VM (used by TETRAD) alive
                 after the search. This is required to use TETRAD objects afterwards. Defaults to
                 True.
+            reusable_vm: A boolean indicating if we want to have the option to reuse the Java VM
+                after potentially closing it. Works doing VM work in a separate process.
             show_graph: A boolean indicating if the resulting graph should be shown. Defaults to
                 True.
             save_graph: A boolean indicating if the resulting graph should be saved. Defaults to
@@ -323,18 +330,40 @@ class StructureLearner():
             **kwargs: Arguments that are used to further specify parameters for the search. Use
                 show_algo_params to find out which ones need to be passed.
         """
-        self._searcher = self._plain_searcher
-        self._searcher.run_search(algo=algo,
-                                  use_knowledge=use_knowledge,
-                                  verbose=verbose,
-                                  keep_vm=keep_vm,
-                                  **kwargs
-                                  )
-        self.graph = self._searcher.graph_output
+        if reusable_vm:
+            self.graph = self._run_discovery_in_separate_process(algo, use_knowledge, verbose, keep_vm, **kwargs)
+        else:
+            self.graph = self._run_discovery_in_main_process(algo, use_knowledge, verbose, keep_vm, **kwargs)
         if show_graph:
             self.display_graph()
         if save_graph:
             self.save_graphs()
+
+    def _run_discovery_in_separate_process(self, algo, use_knowledge, verbose, keep_vm, **kwargs):
+        searcher_input = (self.data, self.continuous, self.discrete, self.knowledge)
+        mp_manager = Manager()
+        queue = mp_manager.Queue()
+        p = Process(
+            target=_run_discovery,
+            args=(searcher_input, algo, use_knowledge, verbose, keep_vm, queue),
+            kwargs=kwargs,
+        )
+        p.start()
+        p.join()  # this blocks until the process terminates
+        if queue.empty():
+            raise AssertionError("A problem with multiprocessing occurred during causal discovery.")
+        return queue.get()
+
+    def _run_discovery_in_main_process(self, algo, use_knowledge, verbose, keep_vm, **kwargs):
+        searcher_input = (self.data, self.continuous, self.discrete, self.knowledge)
+        return _run_discovery(
+                searcher_input,
+                algo,
+                use_knowledge,
+                verbose,
+                keep_vm,
+                **kwargs
+        )
 
     def display_graph(self, edge_analysis=True):
         """Shows the causal graph.
@@ -659,3 +688,23 @@ class StructureLearnerDatabricks(StructureLearner):
 
     def _create_estimator(self):
         self._estimator = estimator.EstimatorDatabricks.from_learner(self, same_data=True)
+
+
+def _run_discovery(searcher_input, algo, use_knowledge, verbose, keep_vm, queue=None, **kwargs):
+    # not a method of the learner to avoid problem with serializing the learner for parallelization
+    searcher = _create_plain_searcher(*searcher_input)
+    searcher.run_search(
+        algo=algo,
+        use_knowledge=use_knowledge,
+        verbose=verbose,
+        keep_vm=keep_vm,
+        **kwargs,
+    )
+    if queue:
+        queue.put(searcher.graph_output)
+    else:
+        return searcher.graph_output
+
+
+def _create_plain_searcher(data, continuous, discrete, knowledge):
+    return _searcher.TetradSearcher(data, continuous, discrete, knowledge)

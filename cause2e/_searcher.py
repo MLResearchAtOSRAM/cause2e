@@ -168,6 +168,7 @@ class TetradSearcher:
             pc().stop_vm()
         else:
             print('Remember to stop the JVM after you are completely done.')
+        return self.graph_output
 
     def _get_graphs(self):
         """Extracts the causal graph from an internal TETRAD format into a cause2e.Graph."""
