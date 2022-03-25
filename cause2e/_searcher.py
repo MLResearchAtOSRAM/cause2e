@@ -7,10 +7,79 @@ It is used by the discovery module to learn the causal graph from data and domai
 Currently only algorithms from the TETRAD program are supported.
 """
 
+from multiprocessing import Manager, Process
+from io import StringIO
+from contextlib import redirect_stdout
 from cause2e import _data_type_mgr as dtm, _graph
 from pycausal.pycausal import pycausal as pc
 from pycausal import search as s
 from pycausal import prior as p
+
+
+def query_searcher_attribute_in_separate_process(searcher_input, attribute_name):
+    return _run_function_in_separate_process(
+        func=query_searcher_attribute,
+        requires_vm=False,
+        searcher_input=searcher_input,
+        attribute_name=attribute_name,
+        )
+
+
+def run_search(searcher_input, algo, use_knowledge, verbose, keep_vm, reusable_vm, **kwargs):
+    searcher = TetradSearcher(*searcher_input)
+    if reusable_vm:
+        return _run_function_in_separate_process(
+            func=searcher.run_search,
+            requires_vm=True,
+            algo=algo,
+            use_knowledge=use_knowledge,
+            verbose=verbose,
+            keep_vm=False,  # process is closed anyway and this keeps unit tests from running forever
+        )
+    else:
+        pc().start_vm()
+        return searcher.run_search(
+            algo=algo,
+            use_knowledge=use_knowledge,
+            verbose=verbose,
+            keep_vm=keep_vm,
+            **kwargs,
+        )
+
+
+def _run_function_in_separate_process(func, requires_vm, *args, **kwargs):
+    mp_manager = Manager()
+    queue = mp_manager.Queue()
+    p = Process(
+        target=_run_function_for_process,
+        args=(func, requires_vm, queue, *args),
+        kwargs=kwargs,
+    )
+    p.start()
+    p.join()  # this blocks until the process terminates
+    if queue.empty():
+        raise AssertionError("A problem with multiprocessing occurred.")
+    return queue.get()
+
+
+def _run_function_for_process(func, requires_vm, queue, *args, **kwargs):
+    if requires_vm:
+        pc().start_vm()
+    return_val = func(*args, **kwargs)
+    queue.put(return_val)
+    if requires_vm:
+        pc().stop_vm()
+
+
+def query_searcher_attribute(searcher_input, attribute_name):
+    searcher = TetradSearcher(*searcher_input)
+    return getattr(searcher, attribute_name)
+
+
+def query_searcher_method(searcher_input, method_name, *args, **kwargs):
+    searcher = TetradSearcher(*searcher_input)
+    method = getattr(searcher, method_name)
+    return method(*args, **kwargs)
 
 
 class TetradSearcher:
@@ -29,28 +98,38 @@ class TetradSearcher:
                                              discrete
                                              )
         self._knowledge = knowledge
-        pc().start_vm()
-        self._tetrad = s.tetradrunner()
         self.scores = None
         self._separator = "---------------------\n"
 
     def show_search_algos(self):
         """Shows all search algorithms that the TETRAD program offers."""
-        print("TETRAD search algos:\n")
-        self._tetrad.listAlgorithms()
-        print(self._separator)
+        self._tetrad = s.tetradrunner()
+        output = StringIO()
+        with redirect_stdout(output):
+            print("TETRAD search algos:\n")
+            self._tetrad.listAlgorithms()
+            print(self._separator)
+        return output.getvalue()
 
     def show_search_scores(self):
         """Shows all search scores that the TETRAD program offers."""
-        print("TETRAD search scores:\n")
-        self._tetrad.listScores()
-        print(self._separator)
+        self._tetrad = s.tetradrunner()
+        output = StringIO()
+        with redirect_stdout(output):
+            print("TETRAD search scores:\n")
+            self._tetrad.listScores()
+            print(self._separator)
+        return output.getvalue()
 
     def show_independence_tests(self):
         """Shows all independence tests that the TETRAD program offers."""
-        print("TETRAD search independence tests:\n")
-        self._tetrad.listIndTests()
-        print(self._separator)
+        self._tetrad = s.tetradrunner()
+        output = StringIO()
+        with redirect_stdout(output):
+            print("TETRAD search independence tests:\n")
+            self._tetrad.listIndTests()
+            print(self._separator)
+        return output.getvalue()
 
     def show_algo_info(self, algo_name):
         """Shows information about a selected algorithm from the TETRAD program.
@@ -58,8 +137,12 @@ class TetradSearcher:
         Args:
             algo_name: A string indicating the name of the algorithm of interest.
         """
-        self._tetrad.getAlgorithmDescription(algo_name)
-        print(self._separator)
+        self._tetrad = s.tetradrunner()
+        output = StringIO()
+        with redirect_stdout(output):
+            self._tetrad.getAlgorithmDescription(algo_name)
+            print(self._separator)
+        return output.getvalue()
 
     def show_algo_params(self, algo_name, test_name=None, score_name=None):
         """Shows the parameters that are required for a causal search with the TETRAD program.
@@ -71,8 +154,12 @@ class TetradSearcher:
             score_name: Optional; A string indicating the search score that the algorithm uses.
                 Use show_algo_info to find out if this is a necessary input. Defaults to None.
         """
-        self._tetrad.getAlgorithmParameters(algo_name, test_name, score_name)
-        print(self._separator)
+        self._tetrad = s.tetradrunner()
+        output = StringIO()
+        with redirect_stdout(output):
+            self._tetrad.getAlgorithmParameters(algo_name, test_name, score_name)
+            print(self._separator)
+        return output.getvalue()
 
     def _get_data_types(self, continuous, discrete):
         """Returns a string indicating if the data is continuous, discrete or mixed.
@@ -154,6 +241,7 @@ class TetradSearcher:
             knowledge = self._tetrad_knowledge
         else:
             knowledge = None
+        self._tetrad = s.tetradrunner()
         self._tetrad.run(algoId=algo,
                          dfs=self._data,
                          dataType=self._data_types,

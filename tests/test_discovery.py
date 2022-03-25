@@ -3,7 +3,6 @@ from cause2e.path_mgr import PathManager
 from cause2e.discovery import StructureLearner
 from cause2e import knowledge
 import os
-# from pycausal.pycausal import pycausal as pc
 
 
 class LearnerForTesting(StructureLearner):
@@ -64,49 +63,44 @@ class TestReaderPandasParquet(unittest.TestCase):
         self.assertEqual(len(self.learner.data), n)
 
 
-# class TestJavaVM(unittest.TestCase):
-#     def test_vm(self):
-#         pc().start_vm()
-#         pc().stop_vm()
+class TestDataTypes(unittest.TestCase):
+    def setUp(self):
+        self.learner = LearnerForTesting()
+        self.learner.read_csv()
 
-# TODO: Develop strategy for multiple tests that require JavaVM
-# class TestDataTypes(unittest.TestCase):
-#     def setUp(self):
-#         self.learner = LearnerForTesting('csv')
-#         self.learner.read_csv()
+    def test_threshold_mixed_data(self):
+        cont = {'W0', 'W1', 'y'}
+        disc = {'v0'}
+        self.learner.continuous = cont
+        self.learner.discrete = disc
+        threshold = self.learner._plain_searcher._type_threshold_incomplete
+        max_disc = max(self.learner.data[disc].nunique())
+        min_cont = min(self.learner.data[cont].nunique())
+        self.assertTrue(max_disc < threshold)
+        self.assertTrue(threshold < min_cont)
 
-#     def test_threshold_mixed_data(self):
-#         cont = {'W0', 'W1', 'y'}
-#         disc = {'v0'}
-#         self.learner.continuous = cont
-#         self.learner.discrete = disc
-#         searcher =
-#         threshold = self.learner._plain_searcher._type_threshold_incomplete
-#         max_disc = max(self.learner.data[disc].nunique())
-#         min_cont = min(self.learner.data[cont].nunique())
-#         self.assertTrue(max_disc < threshold)
-#         self.assertTrue(threshold < min_cont)
 
-# class TestSearch(unittest.TestCase):
-#     def setUp(self):
-#         self.learner = LearnerForTesting('csv')
-#         self.learner.read_csv()
+class TestSearch(unittest.TestCase):
+    def setUp(self):
+        self.learner = LearnerForTesting(dataset='sprinkler')
+        self.learner.read_csv(index_col=0)
+        self.learner.discrete = self.learner.variables
+        self.learner.continuous = set()
 
-#     def test_quick_search(self):
-#         self.learner.run_quick_search(verbose=False, keep_vm=False, show_graph=False, save_graph=False)
-#         self.assertTrue(self.learner.graph)
+    def test_quick_search(self):
+        self._run_test_search(reusable_vm=True)
 
-#     def test_manual_quick_search(self):
-#         pc().start_vm()
-#         tetrad = s.tetradrunner()
-#         tetrad.run(algoId='fges',
-#                    dfs=self.learner.data,
-#                    dataType='mixed',
-#                    numCategoriesToDiscretize=10,
-#                    # priorKnowledge=knowledge,
-#                    verbose=False,
-#                    )
-#         pc().stop_vm()
+    def test_quick_search_in_main_process(self):
+        self._run_test_search(reusable_vm=False)
+
+    def test_run_two_searches(self):
+        self._run_test_search(reusable_vm=True)
+        self._run_test_search(reusable_vm=True)
+
+    def _run_test_search(self, reusable_vm):
+        self.learner.run_quick_search(verbose=False, keep_vm=False, reusable_vm=reusable_vm,
+                                      show_graph=False, save_graph=False)
+        self.assertTrue(self.learner.graph)
 
 
 class TestFullAnalysis(unittest.TestCase):
