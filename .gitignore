@@ -10,3 +10,5 @@ test_notebook.ipynb
 .coverage
 *sphinx_config/_build
 /tests/output
+/tests/fixtures/output
+/tests/fixtures/data/test_generation
