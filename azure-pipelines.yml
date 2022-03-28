@@ -40,7 +40,7 @@ steps:
 
 - script: |
     dir C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk
-    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.322-8\x64
+    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.322-6\x64
     choco install graphviz
     python -m pip install --upgrade pip
     pip install git+https://github.com/bd2kccd/py-causal
