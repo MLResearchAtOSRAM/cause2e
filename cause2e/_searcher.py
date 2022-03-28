@@ -7,7 +7,7 @@ It is used by the discovery module to learn the causal graph from data and domai
 Currently only algorithms from the TETRAD program are supported.
 """
 
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, get_context
 from io import StringIO
 from contextlib import redirect_stdout
 from cause2e import _data_type_mgr as dtm, _graph
@@ -48,7 +48,8 @@ def run_search(searcher_input, algo, use_knowledge, verbose, keep_vm, reusable_v
 
 
 def _run_function_in_separate_process(func, requires_vm, *args, **kwargs):
-    mp_manager = Manager()
+    ctx = get_context('spawn')
+    mp_manager = ctx.Manager()
     queue = mp_manager.Queue()
     p = Process(
         target=_run_function_for_process,
