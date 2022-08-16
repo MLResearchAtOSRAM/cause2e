@@ -39,8 +39,10 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    set JDK_HOME=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.312-7\x64
-    choco install graphviz
+    set jdk_dir=C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk
+    dir %jdk_dir%
+    FOR /F "tokens=*" %%g IN ('dir /b /ad %jdk_dir%\8.0.*') do (SET JDK_HOME=%jdk_dir%\%%g\x64)
+    echo %JDK_HOME%
     python -m pip install --upgrade pip
     pip install git+git://github.com/bd2kccd/py-causal
     pip install -r requirements.txt
