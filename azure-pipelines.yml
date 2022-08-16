@@ -43,6 +43,7 @@ steps:
     dir %jdk_dir%
     FOR /F "tokens=*" %%g IN ('dir /b /ad %jdk_dir%\8.0.*') do (SET JDK_HOME=%jdk_dir%\%%g\x64)
     echo %JDK_HOME%
+    choco install graphviz
     pip install wheel
     pip install https://github.com/bd2kccd/py-causal/archive/master.tar.gz
     pip install -r requirements.txt
