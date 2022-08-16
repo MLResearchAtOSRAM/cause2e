@@ -89,29 +89,3 @@ steps:
     ArtifactName: '$(os.version)_output end-to-end test'
     publishLocation: 'Container'
   displayName: 'Publish output files as artifact'
-
-- script: pip install --upgrade sphinx
-  displayName: 'Install sphinx'
-
-- script: python setup.py install
-  displayName: 'Setup python package.'
-
-- task: CmdLine@2
-  inputs:
-    script: 'make html'
-    workingDirectory: '$(Build.SourcesDirectory)/sphinx_config/'
-  displayName: 'Compile documentation'
-
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/sphinx_config/_build/html'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    Contents: '**'
-  displayName: 'Copy documentation files to artifact directory'
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'documentation'
-    publishLocation: 'Container'
-  displayName: 'Publish documentation as artifact'
