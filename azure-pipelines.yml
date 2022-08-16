@@ -63,29 +63,3 @@ steps:
     pip install pytest-cov
     python -m pytest --junitxml=junit/test-results.xml --cov=cause2e --cov-report=xml tests
   displayName: 'Run tests with pytest and check test coverage'
-
-- task: PublishTestResults@2
-  inputs:
-    testResultsFiles: '**/test-*.xml'
-    testRunTitle: 'Publish test results for Python $(python.version) on $(os.version)'
-  displayName: 'Publish test results'
-
-- task: PublishCodeCoverageResults@1
-  inputs:
-    codeCoverageTool: Cobertura
-    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-  displayName: 'Publish coverage results'
-
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: '$(Build.SourcesDirectory)/tests/output'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    Contents: '**'
-  displayName: 'Copy output files from end-to-end test to artifact directory'
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: '$(os.version)_output end-to-end test'
-    publishLocation: 'Container'
-  displayName: 'Publish output files as artifact'
