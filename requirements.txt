@@ -5,3 +5,4 @@ pillow
 pyarrow
 pycausal
 seaborn
+pandas<2.0
