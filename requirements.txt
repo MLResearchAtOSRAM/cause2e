@@ -6,3 +6,4 @@ pyarrow
 pycausal
 seaborn
 pandas<2.0
+numpy<2.0
