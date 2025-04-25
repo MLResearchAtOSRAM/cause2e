@@ -48,6 +48,7 @@ steps:
     echo %JDK_HOME%
     choco install graphviz
     pip install wheel
+    pip install numpy<2.0
     pip install https://github.com/bd2kccd/py-causal/archive/master.tar.gz
     pip install -r requirements.txt
   condition: eq(variables['os.version'], 'windows-latest')
